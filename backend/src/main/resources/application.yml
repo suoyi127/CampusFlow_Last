@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: campusflow
+  datasource:
+    url: ${CF_DB_URL:jdbc:mysql://localhost:3306/campusflow?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
+    username: ${CF_DB_USER:campusflow}
+    password: ${CF_DB_PASSWORD:}
+  jackson:
+    time-zone: Asia/Shanghai
+  flyway:
+    enabled: true
+server:
+  port: ${CF_PORT:8080}
+  servlet:
+    session:
+      timeout: 2h
+      cookie:
+        http-only: true
+        same-site: lax
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+campusflow:
+  demo-enabled: ${CF_DEMO_ENABLED:false}
+  simulation-enabled: true
+  simulation-delay-ms: 5000
