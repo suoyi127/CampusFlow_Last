@@ -6,6 +6,8 @@ import SpacesPage from './pages/SpacesPage.vue'
 import DetailPage from './pages/DetailPage.vue'
 import DataSpacesPage from './pages/DataSpacesPage.vue'
 import SystemPage from './pages/SystemPage.vue'
+import MyReviewsPage from './pages/MyReviewsPage.vue'
+import DataReviewsPage from './pages/DataReviewsPage.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -15,6 +17,8 @@ export const router = createRouter({
     { path: '/spaces', component: SpacesPage },
     { path: '/spaces/:id', component: DetailPage },
     { path: '/data/spaces', component: DataSpacesPage, meta: { role: 'DATA_ADMIN' } },
+    { path: '/my/reviews', component: MyReviewsPage, meta: { role: 'USER' } },
+    { path: '/data/reviews', component: DataReviewsPage, meta: { role: 'DATA_ADMIN' } },
     { path: '/system', component: SystemPage, meta: { role: 'SERVER_ADMIN' } },
     { path: '/:pathMatch(.*)*', redirect: '/spaces' },
   ],

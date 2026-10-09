@@ -1,3 +1,4 @@
+import type { ReviewSummary } from './reviewTypes'
 export type Role = 'USER' | 'DATA_ADMIN' | 'SERVER_ADMIN'
 export interface Account { id: number; username: string; role: Role; enabled: boolean }
 export interface StudySpace {
@@ -14,6 +15,7 @@ export interface SpaceStatus {
 }
 export interface SpaceCard {
   space: StudySpace; status: SpaceStatus; distanceMeters: number; score: number; openNow: boolean; reasons: string[]
+  reviewSummary: ReviewSummary
 }
 export interface Page<T> { items: T[]; total: number; page: number; pageSize: number; calculatedAt: string; warnings: string[] }
 export interface Overview {

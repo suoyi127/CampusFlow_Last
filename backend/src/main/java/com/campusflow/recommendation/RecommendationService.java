@@ -3,6 +3,7 @@ package com.campusflow.recommendation;
 import com.campusflow.common.BusinessException;
 import com.campusflow.space.*;
 import com.campusflow.status.StatusService;
+import com.campusflow.review.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.*;
@@ -13,8 +14,9 @@ public class RecommendationService {
     private final SpaceService spaces;
     private final StatusService statuses;
     private final Clock clock;
-    public RecommendationService(SpaceService spaces, StatusService statuses, Clock clock) {
-        this.spaces = spaces; this.statuses = statuses; this.clock = clock;
+    private final ReviewService reviews;
+    public RecommendationService(SpaceService spaces, StatusService statuses, Clock clock,ReviewService reviews) {
+        this.spaces = spaces; this.statuses = statuses; this.clock = clock;this.reviews=reviews;
     }
     @Transactional(readOnly=true, isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ) public Map<String,Object> list(SpaceQuery query) {
         double latitude = query.latitude() == null ? 31.2304 : query.latitude();
@@ -29,13 +31,14 @@ public class RecommendationService {
         int duration = query.durationMinutes() == null ? 0 : query.durationMinutes();
         boolean checkOpen = query.startAt() != null || duration > 0 || !Boolean.FALSE.equals(query.openOnly());
         List<SpaceCard> cards = new ArrayList<>();
+        var summaries=reviews.summaries();
         for (var space : spaces.all()) {
             if (!space.enabled) continue;
             if (query.name() != null && !space.name.contains(query.name().trim())) continue;
             if (query.type() != null && !query.type().isEmpty() && !space.type.equals(query.type())) continue;
             if (!facilities(space).containsAll(required)) continue;
             if (checkOpen && !OpeningHours.covers(space, start, duration)) continue;
-            var card = card(space, latitude, longitude, now);
+            var card = card(space, latitude, longitude, now,summaries.getOrDefault(space.id,ReviewSummary.empty()));
             if (card.distanceMeters() > (query.maxDistance() == null ? 3000 : query.maxDistance())) continue;
             if (query.minQuiet() != null && (card.status().quietLevel() == null || card.status().quietLevel() < query.minQuiet())) continue;
             if (query.maxOccupancy() != null && (card.status().occupancyRate() == null || card.status().occupancyRate() > query.maxOccupancy())) continue;
@@ -63,9 +66,9 @@ public class RecommendationService {
     @Transactional(readOnly=true, isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ) public SpaceCard detail(long id, double latitude, double longitude) {
         var space = spaces.get(id);
         if (!space.enabled) throw new BusinessException(409,"SPACE_DISABLED","空间已停用，暂不可查询或提交新评价");
-        return card(space, latitude, longitude, clock.instant());
+        return card(space, latitude, longitude, clock.instant(),reviews.summary(id));
     }
-    private SpaceCard card(StudySpace space, double latitude, double longitude, Instant now) {
+    private SpaceCard card(StudySpace space, double latitude, double longitude, Instant now,ReviewSummary summary) {
         var status = statuses.current(space, now);
         double distance = distance(latitude, longitude, space.latitude, space.longitude);
         double quiet = status.quietLevel() == null ? 0 : (status.quietLevel() - 1) / 4.0;
@@ -76,7 +79,7 @@ public class RecommendationService {
         reasons.add(status.quietLevel() == null ? "暂无近期噪声数据" : "安静等级 " + status.quietLevel() + "/5");
         reasons.add(status.occupancyRate() == null ? "暂无近期人数数据" : "拥挤率 " + Math.round(status.occupancyRate() * 100) + "%");
         if (facilities(space).contains("POWER")) reasons.add("具备插座");
-        return new SpaceCard(space, status, distance, score, OpeningHours.covers(space, now, 0), reasons);
+        return new SpaceCard(space, status, distance, score, OpeningHours.covers(space, now, 0), reasons,summary);
     }
     static Set<String> facilities(StudySpace space) {
         return space.facilities.isBlank() ? Set.of() : new HashSet<>(Arrays.asList(space.facilities.split(",")));

@@ -6,6 +6,7 @@ import { facilityNames, typeNames, recommendationIsStale } from '../types'
 import { filters, queryString } from '../filters'
 import { usePolling } from '../usePolling'
 import StatusMetrics from '../components/StatusMetrics.vue'
+import ReviewSummary from '../components/ReviewSummary.vue'
 const result = ref<Page<SpaceCard> | null>(null)
 const locating = ref(false)
 const locationNote = ref('默认出发点：图书馆东门')
@@ -50,6 +51,7 @@ function preset() { filters.latitude = 31.2304; filters.longitude = 121.4737; lo
       <article v-for="card in result?.items" :key="card.space.id" class="panel space-card">
         <div class="card-heading"><div><span class="space-type">{{ typeNames[card.space.type] }}</span><RouterLink :to="`/spaces/${card.space.id}`"><h2>{{ card.space.name }}</h2></RouterLink><p class="muted">{{ card.space.address }} · {{ Math.round(card.distanceMeters) }} 米</p></div><el-tag :type="card.openNow ? 'success' : 'info'">{{ card.openNow ? '开放中' : '未开放' }}</el-tag></div>
         <StatusMetrics :status="card.status" :elapsed="elapsedSeconds" />
+        <ReviewSummary :summary="card.reviewSummary" />
         <div class="card-bottom"><div class="facility-tags"><el-tag v-for="item in card.space.facilities.split(',').filter(Boolean)" :key="item" type="info" size="small">{{ facilityNames[item] }}</el-tag></div><RouterLink :to="`/spaces/${card.space.id}`">查看详情 →</RouterLink></div>
         <p class="card-reason">{{ error || recommendationIsStale(card.status, elapsedSeconds) ? '状态等待刷新，推荐理由和得分暂不可用。' : card.reasons.join(' · ') }}<span v-if="!error && !recommendationIsStale(card.status, elapsedSeconds)"> · 综合 {{ card.score.toFixed(1) }} 分</span></p>
       </article>

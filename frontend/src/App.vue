@@ -14,7 +14,9 @@ async function signOut() {
     <RouterLink to="/spaces" class="brand"><span class="brand-mark">C</span><span>CampusFlow<small>校园学习空间</small></span></RouterLink>
     <nav v-if="account">
       <RouterLink to="/spaces">找空间</RouterLink>
+      <RouterLink v-if="account.role === 'USER'" to="/my/reviews">我的评价</RouterLink>
       <RouterLink v-if="account.role === 'DATA_ADMIN'" to="/data/spaces">空间管理</RouterLink>
+      <RouterLink v-if="account.role === 'DATA_ADMIN'" to="/data/reviews">评价审核</RouterLink>
       <RouterLink v-if="account.role === 'SERVER_ADMIN'" to="/system">服务器概况</RouterLink>
     </nav>
     <div v-if="account" class="account"><span>{{ account.username }} · {{ roleNames[account.role] }}</span><el-button text @click="signOut">退出</el-button></div>

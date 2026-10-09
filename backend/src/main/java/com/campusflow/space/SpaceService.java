@@ -23,6 +23,11 @@ public class SpaceService {
         if (space == null) throw new BusinessException(404, "SPACE_NOT_FOUND", "空间不存在");
         return space;
     }
+    @Transactional public StudySpace lockForUpdate(long id) {
+        var space=mapper.lock(id);
+        if (space==null) throw new BusinessException(404,"SPACE_NOT_FOUND","空间不存在");
+        return space;
+    }
     @Transactional public StudySpace save(Long id, SpaceInput input, String actor) {
         if (!Set.of("LIBRARY","CLASSROOM","DISCUSSION","OUTDOOR","STUDY_ROOM","CAFE").contains(input.type()))
             throw new BusinessException(400, "INVALID_TYPE", "空间类型无效");

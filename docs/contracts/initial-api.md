@@ -93,3 +93,6 @@ space 的查询字段 openDays/facilities 使用逗号字符串；写入请求�
 `GET /system/overview` 返回 `{version,startedAt,accountCount,spaceCount,simulationRunId,running,pollSeconds,validitySeconds,noiseWindowSeconds}`。
 
 `POST /system/simulation/pause` 和 `/resume` 暂停、继续本轮运行并返回概况。仅 SERVER_ADMIN，写入审计日志。暂停不清空记录，按时间过期。reset、场景切换和配置接口尚未实现。
+# 扩展说明
+
+A04/B03/B04 新增 [评价接口](reviews-api.md)。空间卡片额外包含 `reviewSummary: {count, environmentAverage, facilityAverage}`，仅汇总当前已通过评价；count 为 0 时两项均分为 null。原推荐分算法不变。

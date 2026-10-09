@@ -24,6 +24,7 @@ public class SecurityConfig {
             .requestMatchers("/api/auth/csrf", "/api/auth/login").permitAll()
             .requestMatchers("/api/data/**").hasRole("DATA_ADMIN")
             .requestMatchers("/api/system/**").hasRole("SERVER_ADMIN")
+            .requestMatchers("/api/user/**").hasRole("USER")
             .requestMatchers("/api/**").authenticated()
             .anyRequest().denyAll());
         http.exceptionHandling(errors -> errors
