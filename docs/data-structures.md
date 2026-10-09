@@ -8,7 +8,7 @@
 | account_management_lock | auth | 固定单行锁，序列化账号管理写入；锁定读检查至少保留一个启用的 SERVER_ADMIN |
 | study_space / StudySpace | space | 正容量、合法坐标；设施为四项枚举；启用状态代替删除；开放日 1—7 使用同一日间时段或全天 |
 | SpaceInput | space | 写入边界使用开放日和设施数组，经服务器校验后存储；不能将容量降至在场人数以下 |
-| simulation_run | simulation | 每次启动建立新的模拟轮次，记录起点、场景名与随机种子；本批仅 NORMAL 场景 |
+| simulation_run | simulation | 启动或重置建立新轮次；记录NORMAL/PEAK/NOISE_EVENT/DEVICE_OFFLINE场景和固定种子；查询按当前数据库快照确定轮次 |
 | sim_visit | simulation | 虚拟人员与真实账号无关，唯一编号关联同一次签到签退；checked_out_at 为空表示在场；不重新累加历史签到 |
 | space_snapshot | simulation/status | 记录轮次、空间、人数、采样时间、有效标记；取本轮最近有效快照；id 作为 snapshotVersion |
 | noise_device | simulation | 一空间一设备，ONLINE/OFFLINE 独立于读数有效性；维护基础分贝与波动范围 |
@@ -28,3 +28,7 @@
 评价写入统一先锁空间、再锁评价，随后核对版本。修改已通过评价立即退出公开集合；撤回后仍保留本人历史，并可重新提交。空间停用后禁止提交或修改，但允许本人查询与撤回。管理员审核旧版本返回 409，需重新读取当前内容。
 
 DATETIME 保存 UTC，无时区偏移；接口返回 ISO 8601 UTC，页面按 Asia/Shanghai 显示。默认不超过 30 秒有效，超过即过期；设备离线即时失效，保留最后更新时间。有效期可配置，但至少是模拟周期两倍，噪声窗口不小于有效期。
+
+模拟和检查复用既有表字段，没有新增数据库迁移。快照与噪声valid/invalid_reason用于无效标记和恢复；操作原因写入audit_log。人数回退排除超过现容量的快照，噪声仅汇总有效窗口读数；恢复不修改采样时间，没有有效候选但有记录时状态为INVALID。
+
+周期更新、场景、设备及重置通过覆盖提交的互斥事务执行，空间维护和异常标记共用空间行锁。重置仅清除当前轮次的到访、快照和噪声，保留账号、空间、评价、RUNTIME配置、日志及轮次历史。虚拟人员用运行编号和递增序号标识，不关联真实账号。

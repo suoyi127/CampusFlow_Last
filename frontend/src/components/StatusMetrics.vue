@@ -12,8 +12,8 @@ const noiseValid = computed(() => props.status.deviceState === 'ONLINE' && recen
 
 <template>
   <div class="metrics">
-    <div><small>当前人数</small><strong>{{ peopleValid ? `${status.currentPeople} / ${status.capacity}` : '暂无近期数据' }}</strong><span>{{ peopleValid ? `拥挤率 ${Math.round((status.occupancyRate ?? 0) * 100)}%` : '人数未知' }}</span></div>
-    <div><small>近期典型噪声</small><strong>{{ noiseValid && status.typicalNoiseDb !== null ? `${status.typicalNoiseDb.toFixed(1)} dB` : '暂无近期数据' }}</strong><span>{{ status.deviceState === 'OFFLINE' ? '设备离线' : noiseValid ? `安静等级 ${status.quietLevel ?? '未知'} / 5` : '噪声未知' }}</span></div>
+    <div><small>当前人数</small><strong>{{ peopleValid ? `${status.currentPeople} / ${status.capacity}` : '暂无近期数据' }}</strong><span>{{ peopleValid ? `拥挤率 ${Math.round((status.occupancyRate ?? 0) * 100)}%` : status.peopleState === 'INVALID' ? '记录异常无效' : '人数未知' }}</span></div>
+    <div><small>近期典型噪声</small><strong>{{ noiseValid && status.typicalNoiseDb !== null ? `${status.typicalNoiseDb.toFixed(1)} dB` : '暂无近期数据' }}</strong><span>{{ status.deviceState === 'OFFLINE' ? '设备离线' : noiseValid ? `安静等级 ${status.quietLevel ?? '未知'} / 5` : status.noiseState === 'INVALID' ? '记录异常无效' : '噪声未知' }}</span></div>
   </div>
   <div class="timestamps"><span>人数更新 {{ formatTime(status.peopleUpdatedAt) }}</span><span>噪声更新 {{ formatTime(status.noiseUpdatedAt) }}</span></div>
 </template>

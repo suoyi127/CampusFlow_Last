@@ -23,13 +23,25 @@ public class StatusService {
     public SpaceStatus current(StudySpace space, Instant now) {
         var config=configs.current();
         long run = simulation.runId();
-        var peopleRows = jdbc.queryForList("SELECT * FROM space_snapshot WHERE run_id=? AND space_id=? AND valid=TRUE ORDER BY sampled_at DESC,id DESC LIMIT 1", run, space.id);
+        // 容量降低后，异常回退不能重新显示超过现容量的历史人数。
+        var peopleRows = jdbc.queryForList("SELECT * FROM space_snapshot WHERE run_id=? AND space_id=? AND valid=TRUE AND current_people<=? ORDER BY sampled_at DESC,id DESC LIMIT 1", run, space.id, space.capacity);
         var noiseRows = jdbc.queryForList("SELECT * FROM noise_sample WHERE run_id=? AND space_id=? AND valid=TRUE ORDER BY sampled_at DESC,id DESC LIMIT 1", run, space.id);
         String device = jdbc.queryForObject("SELECT status FROM noise_device WHERE space_id=?", String.class, space.id);
         Instant peopleAt = peopleRows.isEmpty() ? null : timestamp(peopleRows.getFirst().get("sampled_at"));
         Instant noiseAt = noiseRows.isEmpty() ? null : timestamp(noiseRows.getFirst().get("sampled_at"));
         String peopleState = state(peopleAt, now,config.validitySeconds());
         String noiseState = "OFFLINE".equals(device) ? "OFFLINE" : state(noiseAt, now,config.validitySeconds());
+        if (peopleRows.isEmpty()) {
+            var invalid = jdbc.queryForList("SELECT sampled_at FROM space_snapshot WHERE run_id=? AND space_id=? ORDER BY sampled_at DESC,id DESC LIMIT 1",run,space.id);
+            if (!invalid.isEmpty()) { peopleState = "INVALID"; peopleAt = timestamp(invalid.getFirst().get("sampled_at")); }
+        }
+        if (noiseRows.isEmpty()) {
+            var invalid = jdbc.queryForList("SELECT sampled_at FROM noise_sample WHERE run_id=? AND space_id=? ORDER BY sampled_at DESC,id DESC LIMIT 1",run,space.id);
+            if (!invalid.isEmpty()) {
+                noiseAt = timestamp(invalid.getFirst().get("sampled_at"));
+                if (!"OFFLINE".equals(device)) noiseState = "INVALID";
+            }
+        }
         Integer people = "VALID".equals(peopleState) ? ((Number) peopleRows.getFirst().get("current_people")).intValue() : null;
         Double latest = "VALID".equals(noiseState) ? ((Number) noiseRows.getFirst().get("noise_db")).doubleValue() : null;
         Double typical = null;

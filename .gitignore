@@ -8,3 +8,5 @@ target/
 .env.local
 backend/data/
 .worktrees/
+
+.cache/

@@ -1,6 +1,6 @@
 # CampusFlow 学习空间推荐系统
 
-按三人开发计划推进的课程项目。当前版本包含三角色登录、空间维护、后端统一模拟人数与噪声、空间筛选排序、评价提交与审核、账号与运行配置管理、日志查询和手机适配页面。完整场景及异常记录管理是后续阶段。
+按三人开发计划推进的课程项目。当前版本包含三角色登录、空间维护、后端统一模拟人数与噪声、空间筛选排序、评价提交与审核、账号与运行配置管理、日志查询、固定种子场景、设备离线、模拟重置及异常记录检查。
 
 ## 开发环境
 
@@ -17,14 +17,14 @@
 后端：
 
 ```powershell
-cd CampusFlow/backend
+cd CampusFlow_Last/backend
 mvn spring-boot:run "-Dspring-boot.run.profiles=local"
 ```
 
 前端：
 
 ```powershell
-cd CampusFlow/frontend
+cd CampusFlow_Last/frontend
 npm.cmd ci
 npm.cmd run dev
 ```
@@ -50,7 +50,7 @@ local 数据库保存在 `backend/data`，已排除 Git。每次启动开启新�
 先创建空数据库 `campusflow` 和具有该库建表、读写权限的专用账号。密码通过环境变量传入，不写进版本库。
 
 ```powershell
-cd CampusFlow/backend
+cd CampusFlow_Last/backend
 $env:CF_DB_URL = 'jdbc:mysql://localhost:3306/campusflow?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai'
 $env:CF_DB_USER = 'campusflow'
 $env:CF_DB_PASSWORD = Read-Host '数据库密码'
@@ -63,7 +63,7 @@ Flyway 自动从 `database/migrations` 执行版本化迁移；该目录由 Mave
 ## 验证与打包
 
 ```powershell
-cd CampusFlow/backend
+cd CampusFlow_Last/backend
 mvn test package
 cd ../frontend
 npm.cmd run build
@@ -73,7 +73,7 @@ npm.cmd test
 后端输出 `backend/target/campusflow-0.1.0.jar`，前端输出 `frontend/dist`。JAR 提供 API；开发演示页面由 Vite 提供。正式静态部署需让前端与 `/api` 共用同一域名，并将 API 反向代理到后端，不要直接用文件方式打开 `dist/index.html`。
 
 ```powershell
-cd CampusFlow/backend
+cd CampusFlow_Last/backend
 java -jar target/campusflow-0.1.0.jar --spring.profiles.active=local
 ```
 
@@ -92,8 +92,17 @@ java -jar target/campusflow-0.1.0.jar --spring.profiles.active=local
 - [接口约定](docs/contracts/initial-api.md)
 - [评价接口约定](docs/contracts/reviews-api.md)
 - [服务器管理接口](docs/contracts/system-admin-api.md)
+- [模拟管理与数据检查接口](docs/contracts/simulation-api.md)
 - [业务数据结构](docs/data-structures.md)
 - [开发进度与验证记录](docs/progress.md)
 - [原开发计划](docs/reference/development-plan.md)与 [需求文档](docs/reference/requirements.docx)
 
-当前营业时间采用选中的开放日共用一个时段，支持全天开放，不支持跨午夜营业时段。每周每日分别配置时段、场景切换、模拟重置和异常记录标记尚未交付。A05 的账号、配置、日志及暂停/继续已实现；场景与重置依赖 C05，尚未完成。
+当前营业时间采用选中的开放日共用一个时段，支持全天开放，不支持跨午夜营业时段；每周每日分别配置时段仍待完成。A05 的账号、配置、日志、场景和模拟重置已接入。
+
+## 模拟管理与数据检查演示
+
+1. server_admin在服务器概况选择人流高峰，观察人数逐周期增加且不超过容量；应用噪声事件并选择目标空间和持续秒数，观察窗口中位数及推荐变化。
+2. 将检测仪设为离线，噪声立即显示未知；恢复后按原采样时间判断有效性，下一模拟周期才产生新读数。运行周期、有效期和噪声窗口继续由运行配置页面管理。
+3. 暂停模拟后，data_admin在数据检查按空间、记录类型和有效标记查询。填写原因标记最新快照或噪声读数无效，汇总回退或重新计算；恢复不刷新采样时间。虚拟到访仅供查询，不标记无效。
+4. 重置前阅读确认框：本轮到访、快照和读数清除；账号、空间、评价、运行配置和日志保留，运行开关保持。重置后运行编号变化，旧记录写操作被拒绝。
+5. 在操作日志检查SIMULATION_SCENARIO、SIMULATION_RESET、DEVICE_STATUS、RECORD_INVALIDATE或RECORD_RESTORE动作。

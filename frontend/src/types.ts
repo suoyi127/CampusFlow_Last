@@ -21,6 +21,15 @@ export interface Page<T> { items: T[]; total: number; page: number; pageSize: nu
 export interface Overview {
   version: string; startedAt: string; accountCount: number; spaceCount: number; simulationRunId: number
   running: boolean; pollSeconds: number; simulationSeconds: number; validitySeconds: number; noiseWindowSeconds: number
+  scenario: Scenario; seed: number; targetSpaceId: number | null; eventEndsAt: string | null
+}
+export type Scenario = 'NORMAL' | 'PEAK' | 'NOISE_EVENT' | 'DEVICE_OFFLINE'
+export const scenarioNames: Record<Scenario, string> = { NORMAL: '正常人流', PEAK: '人流高峰', NOISE_EVENT: '噪声事件', DEVICE_OFFLINE: '设备离线' }
+export interface NoiseDevice { id: number; spaceId: number; spaceName: string; enabled: boolean; deviceCode: string; status: 'ONLINE' | 'OFFLINE'; baseDb: number; fluctuationDb: number }
+export type RecordKind = 'PEOPLE' | 'NOISE' | 'VISIT'
+export interface SimulationRecord {
+  id: number; runId: number; spaceId: number; sampledAt?: string; valid?: boolean; invalidReason?: string | null
+  currentPeople?: number; noiseDb?: number; deviceId?: number; virtualPersonId?: string; checkedInAt?: string; checkedOutAt?: string | null
 }
 export const facilityNames: Record<string, string> = { AC: '空调', SEAT: '座椅', POWER: '插座', WIFI: '网络' }
 export const typeNames: Record<string, string> = { LIBRARY: '图书馆', CLASSROOM: '教室', DISCUSSION: '研讨区', OUTDOOR: '室外', STUDY_ROOM: '自习室', CAFE: '咖啡厅' }

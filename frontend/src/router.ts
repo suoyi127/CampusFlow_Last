@@ -11,6 +11,7 @@ import DataReviewsPage from './pages/DataReviewsPage.vue'
 import SystemAccountsPage from './pages/SystemAccountsPage.vue'
 import SystemConfigPage from './pages/SystemConfigPage.vue'
 import SystemLogsPage from './pages/SystemLogsPage.vue'
+import DataInspectionPage from './pages/DataInspectionPage.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -22,6 +23,7 @@ export const router = createRouter({
     { path: '/data/spaces', component: DataSpacesPage, meta: { role: 'DATA_ADMIN' } },
     { path: '/my/reviews', component: MyReviewsPage, meta: { role: 'USER' } },
     { path: '/data/reviews', component: DataReviewsPage, meta: { role: 'DATA_ADMIN' } },
+    { path: '/data/inspection', component: DataInspectionPage, meta: { role: 'DATA_ADMIN' } },
     { path: '/system', component: SystemPage, meta: { role: 'SERVER_ADMIN' } },
     { path: '/system/accounts', component: SystemAccountsPage, meta: { role: 'SERVER_ADMIN' } },
     { path: '/system/config', component: SystemConfigPage, meta: { role: 'SERVER_ADMIN' } },
