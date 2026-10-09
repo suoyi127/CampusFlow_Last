@@ -97,6 +97,8 @@ java -jar target/campusflow-0.1.0.jar --spring.profiles.active=local
 - [评价接口约定](docs/contracts/reviews-api.md)
 - [服务器管理接口](docs/contracts/system-admin-api.md)
 - [模拟管理与数据检查接口](docs/contracts/simulation-api.md)
+- [ESP32 签到签退与环境数据接收](docs/contracts/hardware-api.md)：MQTT 主题、HTTP 接口、设备绑定和启动配置。
+- [硬件与后端环境、配置及启动说明](docs/hardware-backend-setup.md)：环境要求、账号配置、启动脚本用途和完整联调步骤。
 - [业务数据结构](docs/data-structures.md)
 - [开发进度与验证记录](docs/progress.md)
 - [原开发计划](docs/reference/development-plan.md)与 [需求文档](docs/reference/requirements.docx)

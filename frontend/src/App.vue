@@ -16,6 +16,7 @@ async function signOut() {
       <RouterLink to="/spaces">找空间</RouterLink>
       <RouterLink v-if="account.role === 'USER'" to="/my/reviews">我的评价</RouterLink>
       <RouterLink v-if="account.role === 'DATA_ADMIN'" to="/data/spaces">空间管理</RouterLink>
+      <RouterLink v-if="account.role === 'DATA_ADMIN'" to="/data/hardware-devices">设备管理</RouterLink>
       <RouterLink v-if="account.role === 'DATA_ADMIN'" to="/data/reviews">评价审核</RouterLink>
       <RouterLink v-if="account.role === 'DATA_ADMIN'" to="/data/inspection">数据检查</RouterLink>
       <RouterLink v-if="account.role === 'SERVER_ADMIN'" to="/system">服务器概况</RouterLink>

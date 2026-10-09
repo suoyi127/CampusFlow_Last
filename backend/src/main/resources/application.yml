@@ -25,3 +25,13 @@ mybatis-plus:
 campusflow:
   demo-enabled: ${CF_DEMO_ENABLED:false}
   simulation-enabled: true
+  checkin:
+    # 兼容旧配置，仅首次导入数据库；日常绑定由数据管理员在设备管理页面维护。
+    device-bindings: ${CF_CHECKIN_DEVICE_BINDINGS:}
+    http-token: ${CF_CHECKIN_HTTP_TOKEN:}
+    mqtt:
+      enabled: ${CF_CHECKIN_MQTT_ENABLED:false}
+      uri: ${CF_CHECKIN_MQTT_URI:tcp://localhost:1883}
+      client-id: ${CF_CHECKIN_MQTT_CLIENT_ID:campusflow-checkin-receiver}
+      username: ${CF_CHECKIN_MQTT_USERNAME:}
+      password: ${CF_CHECKIN_MQTT_PASSWORD:}

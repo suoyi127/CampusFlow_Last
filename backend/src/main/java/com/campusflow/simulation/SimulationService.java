@@ -25,15 +25,17 @@ public class SimulationService implements ApplicationRunner {
     private final Clock clock;
     private final AuditService audit;
     private final TransactionTemplate transaction;
+    private final com.campusflow.hardware.HardwareService hardware;
     private volatile long runId;
     private boolean running = true;
     private Scenario scenario = Scenario.NORMAL;
     private long seed = 127, step = 0, person = 0;
     private Long targetSpaceId;
     private Instant eventEndsAt;
-    public SimulationService(SpaceMapper spaces, JdbcTemplate jdbc, Clock clock, AuditService audit, PlatformTransactionManager manager) {
+    public SimulationService(SpaceMapper spaces, JdbcTemplate jdbc, Clock clock, AuditService audit, PlatformTransactionManager manager,com.campusflow.hardware.HardwareService hardware) {
         this.spaces = spaces; this.jdbc = jdbc; this.clock = clock; this.audit = audit;
         transaction = new TransactionTemplate(manager);
+        this.hardware=hardware;
     }
     @Override public void run(ApplicationArguments args) { mutate(this::startRun); }
     // 在查询事务自己的数据库快照中选轮次，避免读到重置尚未提交的内存编号。
@@ -63,7 +65,7 @@ public class SimulationService implements ApplicationRunner {
         jdbc.update("UPDATE noise_device SET status='ONLINE'");
         var random=new Random(seed);
         for(var space:all) {
-            if(!space.enabled) continue;
+            if(!space.enabled || hardware.bound(space.id)) continue;
             boolean open=OpeningHours.covers(space,clock.instant(),0);
             int initial=open ? (int)Math.floor(space.capacity*(0.2+random.nextDouble()*0.3)) : 0;
             for(int i=0;i<initial;i++) checkIn(space,now);
@@ -71,6 +73,7 @@ public class SimulationService implements ApplicationRunner {
         }
     }
     public long currentPeople(long spaceId) {
+        if(hardware.bound(spaceId)) return hardware.currentPeople(spaceId);
         return Objects.requireNonNull(jdbc.queryForObject("SELECT COUNT(*) FROM sim_visit WHERE space_id=? AND checked_out_at IS NULL",Long.class,spaceId));
     }
     @Transactional public void initializeDevice(StudySpace space) {
@@ -90,7 +93,7 @@ public class SimulationService implements ApplicationRunner {
         if(!running) return;
         var random=new Random(seed+step++);
         for(var space:all) {
-            if(!space.enabled || !OpeningHours.covers(space,clock.instant(),0)) continue;
+            if(!space.enabled || hardware.bound(space.id) || !OpeningHours.covers(space,clock.instant(),0)) continue;
             var active=jdbc.queryForList("SELECT id FROM sim_visit WHERE run_id=? AND space_id=? AND checked_out_at IS NULL ORDER BY id",Long.class,runId,space.id);
             int people=active.size();
             int delta=scenario==Scenario.PEAK ? Math.max(1,space.capacity/10)+random.nextInt(3) : random.nextInt(7)-3;
