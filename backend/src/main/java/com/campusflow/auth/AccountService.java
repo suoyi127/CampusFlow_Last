@@ -15,8 +15,7 @@ public class AccountService implements UserDetailsService {
     @Override public UserDetails loadUserByUsername(String username) {
         var account = find(username);
         if (account == null) throw new UsernameNotFoundException("账号不存在");
-        return User.withUsername(account.username).password(account.passwordHash)
-            .roles(account.role).disabled(!account.enabled).build();
+        return new VersionedUser(account);
     }
     public Account current(String username) {
         var account = find(username);

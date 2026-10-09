@@ -12,4 +12,5 @@ public class Account {
     public String role;
     public Boolean enabled;
     public LocalDateTime createdAt;
+    public Long version;
 }

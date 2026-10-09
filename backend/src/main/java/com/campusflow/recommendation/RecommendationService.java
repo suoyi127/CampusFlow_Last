@@ -4,6 +4,7 @@ import com.campusflow.common.BusinessException;
 import com.campusflow.space.*;
 import com.campusflow.status.StatusService;
 import com.campusflow.review.*;
+import com.campusflow.system.ConfigService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.*;
@@ -15,8 +16,9 @@ public class RecommendationService {
     private final StatusService statuses;
     private final Clock clock;
     private final ReviewService reviews;
-    public RecommendationService(SpaceService spaces, StatusService statuses, Clock clock,ReviewService reviews) {
-        this.spaces = spaces; this.statuses = statuses; this.clock = clock;this.reviews=reviews;
+    private final ConfigService configs;
+    public RecommendationService(SpaceService spaces, StatusService statuses, Clock clock,ReviewService reviews,ConfigService configs) {
+        this.spaces = spaces; this.statuses = statuses; this.clock = clock;this.reviews=reviews;this.configs=configs;
     }
     @Transactional(readOnly=true, isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ) public Map<String,Object> list(SpaceQuery query) {
         double latitude = query.latitude() == null ? 31.2304 : query.latitude();
@@ -73,7 +75,9 @@ public class RecommendationService {
         double distance = distance(latitude, longitude, space.latitude, space.longitude);
         double quiet = status.quietLevel() == null ? 0 : (status.quietLevel() - 1) / 4.0;
         double free = status.occupancyRate() == null ? 0 : 1 - status.occupancyRate();
-        double score = (Math.max(0, 1 - distance / 3000) * .30 + quiet * .30 + free * .25 + facilities(space).size() / 4.0 * .15) * 100;
+        var config=configs.current();
+        double score = (Math.max(0, 1 - distance / 3000) * config.distanceWeight() + quiet * config.quietWeight()
+            + free * config.freeWeight() + facilities(space).size() / 4.0 * config.facilityWeight()) * 100;
         var reasons = new ArrayList<String>();
         reasons.add("直线距离 " + Math.round(distance) + " 米");
         reasons.add(status.quietLevel() == null ? "暂无近期噪声数据" : "安静等级 " + status.quietLevel() + "/5");

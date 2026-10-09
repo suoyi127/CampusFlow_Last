@@ -25,4 +25,3 @@ mybatis-plus:
 campusflow:
   demo-enabled: ${CF_DEMO_ENABLED:false}
   simulation-enabled: true
-  simulation-delay-ms: 5000

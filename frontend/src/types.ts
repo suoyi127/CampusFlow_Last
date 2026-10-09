@@ -20,7 +20,7 @@ export interface SpaceCard {
 export interface Page<T> { items: T[]; total: number; page: number; pageSize: number; calculatedAt: string; warnings: string[] }
 export interface Overview {
   version: string; startedAt: string; accountCount: number; spaceCount: number; simulationRunId: number
-  running: boolean; pollSeconds: number; validitySeconds: number; noiseWindowSeconds: number
+  running: boolean; pollSeconds: number; simulationSeconds: number; validitySeconds: number; noiseWindowSeconds: number
 }
 export const facilityNames: Record<string, string> = { AC: '空调', SEAT: '座椅', POWER: '插座', WIFI: '网络' }
 export const typeNames: Record<string, string> = { LIBRARY: '图书馆', CLASSROOM: '教室', DISCUSSION: '研讨区', OUTDOOR: '室外', STUDY_ROOM: '自习室', CAFE: '咖啡厅' }

@@ -18,6 +18,9 @@ async function signOut() {
       <RouterLink v-if="account.role === 'DATA_ADMIN'" to="/data/spaces">空间管理</RouterLink>
       <RouterLink v-if="account.role === 'DATA_ADMIN'" to="/data/reviews">评价审核</RouterLink>
       <RouterLink v-if="account.role === 'SERVER_ADMIN'" to="/system">服务器概况</RouterLink>
+      <RouterLink v-if="account.role === 'SERVER_ADMIN'" to="/system/accounts">账号管理</RouterLink>
+      <RouterLink v-if="account.role === 'SERVER_ADMIN'" to="/system/config">运行配置</RouterLink>
+      <RouterLink v-if="account.role === 'SERVER_ADMIN'" to="/system/logs">操作日志</RouterLink>
     </nav>
     <div v-if="account" class="account"><span>{{ account.username }} · {{ roleNames[account.role] }}</span><el-button text @click="signOut">退出</el-button></div>
   </header>
