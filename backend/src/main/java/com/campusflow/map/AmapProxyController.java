@@ -13,9 +13,8 @@ import java.time.Duration;
 import java.util.*;
 
 @RestController
-@RequestMapping("/api/amap")
 public class AmapProxyController {
-    private static final String PREFIX="/api/amap/_AMapService";
+    private static final String PREFIX="/_AMapService";
     private static final Map<String,String> ROUTES=Map.of(
         "/v3/place/text","restapi.amap.com", "/v3/geocode/regeo","restapi.amap.com",
         "/v3/assistant/coordinate/convert","restapi.amap.com", "/v3/ip","restapi.amap.com",
@@ -28,7 +27,7 @@ public class AmapProxyController {
         @Value("${CF_AMAP_SECURITY_JS_CODE:}") String securityCode) {
         this.key=key;this.securityCode=securityCode;
     }
-    @GetMapping("/config") public Map<String,Object> config() {
+    @GetMapping("/api/amap/config") public Map<String,Object> config() {
         // 浏览器 Key 本身公开；安全密钥只能注入固定上游请求。
         boolean configured=!key.isBlank()&&!securityCode.isBlank();
         return Map.of("configured",configured,"key",configured?key:"");
@@ -51,8 +50,15 @@ public class AmapProxyController {
             // 不转发重定向、Cookie 或包含凭据的上游异常信息。
             if (upstream.statusCode()!=200)
                 throw new BusinessException(502,"MAP_UPSTREAM_UNAVAILABLE","地图服务暂不可用");
-            return ResponseEntity.ok().header("Content-Type",upstream.headers().firstValue("Content-Type")
-                .orElse("application/json")).header("Cache-Control","no-store").body(upstream.body());
+            byte[] body=upstream.body();
+            String contentType=upstream.headers().firstValue("Content-Type").orElse("application/json");
+            String callback=request.getParameter("callback");
+            // JSONP 必须使用脚本类型，否则浏览器在 nosniff 下拒绝执行；普通 JSON 不能提升为脚本。
+            if (callback!=null&&callback.matches("[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*")
+                &&new String(body,StandardCharsets.UTF_8).stripLeading().startsWith(callback+"("))
+                contentType="application/javascript;charset=UTF-8";
+            return ResponseEntity.ok().header("Content-Type",contentType)
+                .header("Cache-Control","no-store").body(body);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException(502,"MAP_UPSTREAM_UNAVAILABLE","地图服务请求已中断");

@@ -64,7 +64,7 @@ function spaceName(id: number) { return devices.value.find(device => device.spac
     <el-pagination v-if="result" v-model:current-page="filters.page" :total="result.total" :page-size="20" layout="prev, pager, next" />
     <p class="muted">有效标记与数据时效分别判断。恢复旧记录不会刷新采样时间；新快照会继续按真实模拟到访生成。</p>
   </section>
-  <el-dialog v-model="opened" :title="selected?.row.valid ? '标记异常记录' : '恢复误标记录'" width="min(520px,94vw)" :close-on-click-modal="!saving" :show-close="!saving">
+  <el-dialog class="cf-dialog" append-to-body v-model="opened" :title="selected?.row.valid ? '标记异常记录' : '恢复误标记录'" width="min(520px,94vw)" :close-on-click-modal="!saving" :show-close="!saving">
     <form class="edit-form" @submit.prevent="save"><p>记录 #{{ selected?.row.id }}。操作后会重新选择有效快照或计算噪声中位数。</p><el-alert v-if="mutationError" :title="mutationError" type="error" :closable="false" /><label>操作原因<el-input v-model="reason" type="textarea" maxlength="500" show-word-limit :disabled="saving" /></label><el-button native-type="submit" type="primary" :loading="saving">确认{{ selected?.row.valid ? '标记' : '恢复' }}</el-button></form>
   </el-dialog>
 </template>

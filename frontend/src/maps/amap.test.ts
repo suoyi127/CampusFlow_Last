@@ -30,7 +30,7 @@ test('concurrent map components share SDK loading and only send serviceHost to t
   window.AMap = { plugin: (_names: string[], done: () => void) => done() } as unknown as NonNullable<Window['AMap']>
   document.querySelector<HTMLScriptElement>('script[data-campusflow-amap]')!.dispatchEvent(new Event('load'))
   expect(await first).toBe(await second)
-  expect(window._AMapSecurityConfig).toEqual({ serviceHost: `${window.location.origin}/api/amap/_AMapService` })
+  expect(window._AMapSecurityConfig).toEqual({ serviceHost: `${window.location.origin}/_AMapService` })
   expect(JSON.stringify(window._AMapSecurityConfig)).not.toContain('securityJsCode')
 })
 

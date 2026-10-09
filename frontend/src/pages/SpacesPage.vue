@@ -78,5 +78,5 @@ function preset() { filters.latitude = 31.2304; filters.longitude = 121.4737; lo
       </template>
     </section>
   </div>
-  <el-dialog v-model="locationOpened" title="选择搜索起点" width="min(860px, 96vw)"><LocationPicker v-if="locationOpened" :initial="origin" :allow-locate="true" @confirm="confirmLocation" @cancel="locationOpened = false" /></el-dialog>
+  <el-dialog class="cf-dialog cf-dialog--map" append-to-body v-model="locationOpened" title="选择搜索起点" width="min(860px, 96vw)"><LocationPicker v-if="locationOpened" :initial="origin" :allow-locate="true" @confirm="confirmLocation" @cancel="locationOpened = false" /></el-dialog>
 </template>

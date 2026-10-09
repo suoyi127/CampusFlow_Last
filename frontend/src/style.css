@@ -15,3 +15,99 @@
 .map-origin-marker,.map-space-marker{display:grid;place-items:center;background:#137d72;color:#fff;min-width:30px;height:30px;padding:0 8px;border:2px solid white;border-radius:50%;box-shadow:0 2px 8px #24353d40;font-size:13px;font-weight:600;white-space:nowrap}.map-origin-marker{background:#ae663d;border-radius:8px;font-size:12px}
 .map-space-summary{margin-top:18px;padding-top:18px;border-top:1px solid #e4ecea}.map-space-summary p{overflow-wrap:anywhere}.location-picker details{margin:16px 0}.location-picker summary{cursor:pointer;color:#52646b;margin-bottom:12px}.location-picker .review-actions{margin-top:20px}
 @media(max-width:640px){.amap-canvas{height:320px}.space-map{padding:16px}.map-search .el-input{flex-basis:100%}.map-search .el-button{flex:1}.map-space-summary h2{font-size:19px}}
+
+/* 网格子项允许收缩，长地址和表格在自身容器内换行或滚动。 */
+main, .search-layout > *, .login-layout > *, .overview-grid > * { min-width: 0; }
+.search-layout { grid-template-columns: 280px minmax(0, 1fr); }
+.login-layout { grid-template-columns: minmax(0, 1fr) minmax(300px, 400px); gap: clamp(24px, 5vw, 80px); padding: clamp(16px, 3vw, 50px); }
+.page-heading > *, .card-heading > *, .card-bottom > *, .detail-panel dd { min-width: 0; overflow-wrap: anywhere; }
+.topbar nav { flex: 1 1 360px; min-width: 0; }
+.account { flex-shrink: 0; }
+.form-row { align-items: end; }
+.form-row > label { min-width: min(100%, 160px); }
+.edit-form .el-select, .review-editor .el-select { width: 100%; }
+.el-checkbox-group { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.el-checkbox-group .el-checkbox { margin-right: 0; max-width: 100%; }
+.el-pagination { flex-wrap: wrap; gap: 8px; }
+
+/* 标题固定在浮窗顶部，长表单只滚动内容；dvh 随移动浏览器可视高度变化。 */
+.el-dialog.cf-dialog {
+  --el-dialog-padding-primary: 24px;
+  width: min(var(--el-dialog-width, 640px), calc(100% - 48px));
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
+  margin: 24px auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.cf-dialog .el-dialog__header { flex: none; margin: 0; padding-bottom: 18px; padding-right: 36px; border-bottom: 1px solid #edf1ef; }
+.cf-dialog .el-dialog__title { display: block; line-height: 1.5; overflow-wrap: anywhere; }
+.cf-dialog .el-dialog__headerbtn { width: 44px; height: 44px; top: 12px; right: 12px; }
+.cf-dialog .el-dialog__body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-top: 20px; scrollbar-gutter: stable; overflow-wrap: anywhere; }
+.cf-dialog .el-dialog__footer { flex: none; padding-top: 16px; }
+.cf-dialog .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 16px; }
+.cf-dialog .form-row > * { min-width: 0; }
+.cf-dialog .el-input-number, .cf-dialog .el-select { width: 100%; }
+.cf-dialog .review-actions .el-button { margin-left: 0; }
+.cf-dialog .amap-canvas { height: clamp(220px, 42vh, 400px); height: clamp(220px, 42dvh, 400px); min-height: 180px; }
+.el-message-box { max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; }
+.el-message { max-width: calc(100vw - 24px); }
+.el-message__content { overflow-wrap: anywhere; }
+
+@media (max-width: 1024px) {
+  .topbar { column-gap: 24px; padding-inline: 24px; }
+  .topbar nav { order: 3; flex-basis: 100%; }
+  .account { margin-left: auto; }
+  .search-layout { grid-template-columns: 240px minmax(0, 1fr); gap: 20px; }
+  .login-layout { gap: 28px; }
+}
+@media (max-width: 800px) {
+  .search-layout { grid-template-columns: minmax(0, 1fr); }
+  .filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filters h3, .filters > small, .filters > .location-controls, .filters > .el-button { grid-column: 1 / -1; }
+  .login-layout { grid-template-columns: minmax(0, 1fr); max-width: 520px; margin-inline: auto; }
+  .login-copy h1 { font-size: 32px; }
+  .login-copy p, .login-feature { display: none; }
+}
+@media (max-width: 640px) {
+  main { padding: 24px 12px 40px; }
+  .topbar { padding: 14px 12px; gap: 14px; }
+  .topbar nav { flex-wrap: nowrap; overflow-x: auto; gap: 20px; padding-bottom: 8px; }
+  .topbar nav a { flex-shrink: 0; padding-block: 6px; }
+  .account span { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .panel { padding: 18px; }
+  .table-panel { padding: 8px; }
+  .login-layout { padding: 8px 0; }
+  .login-form { padding: 24px; }
+  .filters, .moderation-filters { gap: 14px; }
+  .filters > label, .moderation-filters > label { min-width: 0; }
+  .moderation-filters > label { flex-basis: calc(50% - 14px); }
+  .results-toolbar { flex-wrap: wrap; }
+  .card-bottom { flex-wrap: wrap; }
+  .detail-panel dl { grid-template-columns: 88px minmax(0, 1fr); gap: 14px; }
+  .el-dialog.cf-dialog {
+    --el-dialog-padding-primary: 16px;
+    width: calc(100% - 16px);
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    margin: 8px auto;
+    border-radius: 12px;
+  }
+  .cf-dialog .el-dialog__headerbtn { top: 4px; right: 4px; }
+  .cf-dialog .el-dialog__body { padding-top: 16px; scrollbar-gutter: auto; }
+  .cf-dialog .el-input__inner { font-size: 16px; }
+  .cf-dialog .el-button, .review-actions .el-button { min-height: 40px; }
+  .cf-dialog .review-actions { gap: 10px; }
+  .cf-dialog .review-actions .el-button { flex: 1; }
+  .cf-dialog .amap-canvas { height: 32vh; height: 32dvh; }
+}
+@media (max-width: 380px) {
+  .filters { grid-template-columns: minmax(0, 1fr); }
+  .moderation-filters > label { flex-basis: 100%; }
+  .cf-dialog .form-row { grid-template-columns: minmax(0, 1fr); }
+  .brand { gap: 8px; font-size: 16px; }
+  .brand-mark { width: 34px; height: 34px; }
+  .account span { max-width: 88px; }
+}

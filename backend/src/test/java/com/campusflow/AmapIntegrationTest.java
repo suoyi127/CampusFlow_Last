@@ -23,10 +23,10 @@ class AmapIntegrationTest {
             .param("password","Demo@123456")).andExpect(status().isOk()).andReturn().getRequest().getSession(false);
     }
     @Test void proxyRequiresLoginAndRejectsUnsupportedPaths() throws Exception {
-        mvc.perform(get("/api/amap/_AMapService/v3/place/text")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/_AMapService/v3/place/text")).andExpect(status().isUnauthorized());
         var session=login("student");
-        mvc.perform(get("/api/amap/_AMapService/anything").session(session)).andExpect(status().isBadRequest());
-        mvc.perform(get("/api/amap/_AMapService/v3/place/text").session(session)).andExpect(status().isServiceUnavailable())
+        mvc.perform(get("/_AMapService/anything").session(session)).andExpect(status().isBadRequest());
+        mvc.perform(get("/_AMapService/v3/place/text").session(session)).andExpect(status().isServiceUnavailable())
             .andExpect(jsonPath("code").value("MAP_NOT_CONFIGURED"));
     }
     @Test void unknownCoordinatesAreExcludedFromRecommendations() throws Exception {
@@ -39,6 +39,28 @@ class AmapIntegrationTest {
     }
     @Test void migrationRecognizesTenSyntheticDemoCoordinates() {
         org.junit.jupiter.api.Assertions.assertEquals(10,jdbc.queryForObject("SELECT COUNT(*) FROM study_space WHERE coordinate_system='GCJ02'",Integer.class));
+    }
+    @Test void decimalCoordinatesRoundTripWithoutOffsetAndDistancesUseSameOrigin() throws Exception {
+        double latitude=30.123456789,longitude=120.987654321;
+        var body=json.createObjectNode().put("name","坐标链路验证").put("type","STUDY_ROOM")
+            .put("address","测试地址").put("latitude",latitude).put("longitude",longitude)
+            .put("capacity",10000).put("openTime","00:00").put("closeTime","23:59")
+            .put("allDay",true).put("description","").put("enabled",true).put("coordinateSystem","GCJ02");
+        body.putArray("openDays").add(1);body.putArray("facilities").add("SEAT");
+        mvc.perform(put("/api/data/spaces/6").session(login("data_admin")).with(csrf()).contentType("application/json")
+            .content(body.toString())).andExpect(status().isOk())
+            .andExpect(jsonPath("latitude").value(latitude)).andExpect(jsonPath("longitude").value(longitude));
+        org.junit.jupiter.api.Assertions.assertEquals(latitude,jdbc.queryForObject("SELECT latitude FROM study_space WHERE id=6",Double.class),1e-10);
+        org.junit.jupiter.api.Assertions.assertEquals(longitude,jdbc.queryForObject("SELECT longitude FROM study_space WHERE id=6",Double.class),1e-10);
+        var user=login("student");
+        mvc.perform(get("/api/spaces/6").session(user).param("latitude",String.valueOf(latitude)).param("longitude",String.valueOf(longitude)))
+            .andExpect(status().isOk()).andExpect(jsonPath("distanceMeters").value(0.0));
+        var response=mvc.perform(get("/api/spaces/6").session(user).param("latitude",String.valueOf(latitude+0.001)).param("longitude",String.valueOf(longitude)))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        org.junit.jupiter.api.Assertions.assertEquals(111.1949266,json.readTree(response).get("distanceMeters").asDouble(),0.0001);
+        mvc.perform(get("/api/spaces").session(user).param("latitude",String.valueOf(latitude)).param("longitude",String.valueOf(longitude))
+            .param("name","坐标链路验证").param("openOnly","false"))
+            .andExpect(status().isOk()).andExpect(jsonPath("items[0].distanceMeters").value(0.0));
     }
     @Test void administratorMustUseGcj02AndCanConfirmUnknownCoordinates() throws Exception {
         jdbc.update("UPDATE study_space SET coordinate_system='UNKNOWN' WHERE id=6");
