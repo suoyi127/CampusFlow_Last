@@ -89,7 +89,7 @@ onUnmounted(() => { disposed = true; selection.close(); map?.destroy(); map = un
     <div ref="container" class="amap-canvas" :aria-busy="loading" aria-label="位置选择地图" />
     <p v-if="note" role="status">{{ note }}</p>
     <p v-if="draft">已选：{{ draft.address || '未取得地址，可手动填写' }} · {{ draft.longitude.toFixed(6) }}, {{ draft.latitude.toFixed(6) }}<span v-if="draft.accuracy"> · 定位精度约 {{ Math.round(draft.accuracy) }} 米，请核对精度圈</span></p>
-    <details><summary>手动输入 GCJ-02 坐标（地图不可用时仍可使用）</summary><div class="form-row"><label>经度<el-input-number v-model="manual.longitude" :min="-180" :max="180" :precision="6" /></label><label>纬度<el-input-number v-model="manual.latitude" :min="-90" :max="90" :precision="6" /></label><el-button @click="pick({ ...manual, coordinateSystem: 'GCJ02' })">选择手动坐标</el-button></div><small>请先确认坐标来自高德 GCJ-02；GPS 原始坐标不能直接使用。</small></details>
+    <details><summary>手动输入 GCJ-02 坐标（地图不可用时仍可使用）</summary><div class="form-row"><label>经度<el-input-number v-model="manual.longitude" :min="-180" :max="180" :precision="6" :step="0.000001" /></label><label>纬度<el-input-number v-model="manual.latitude" :min="-90" :max="90" :precision="6" :step="0.000001" /></label><el-button @click="pick({ ...manual, coordinateSystem: 'GCJ02' })">选择手动坐标</el-button></div><small>请先确认坐标来自高德 GCJ-02；GPS 原始坐标不能直接使用。</small></details>
     <div class="review-actions"><el-button type="primary" :disabled="!draft" @click="confirm">确认位置</el-button><el-button @click="emit('cancel')">取消</el-button></div>
   </section>
 </template>

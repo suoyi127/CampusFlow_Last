@@ -59,7 +59,7 @@ onMounted(load)
       <el-button @click="locationOpened = true">地图选择位置</el-button>
       <p class="muted">手动输入仅接受高德 GCJ-02 坐标；默认值是上海演示点，请确认真实学习空间位置。</p>
       <el-checkbox v-if="form.coordinateSystem !== 'GCJ02'" v-model="manualConfirmed">已确认手动坐标为 GCJ-02</el-checkbox>
-      <div class="form-row"><label>纬度（GCJ-02）<el-input-number v-model="form.latitude" :min="-90" :max="90" :precision="6" /></label><label>经度（GCJ-02）<el-input-number v-model="form.longitude" :min="-180" :max="180" :precision="6" /></label><label>容量<el-input-number v-model="form.capacity" :min="1" :max="10000" /></label></div>
+      <div class="form-row"><label>纬度（GCJ-02）<el-input-number v-model="form.latitude" :min="-90" :max="90" :precision="6" :step="0.000001" /></label><label>经度（GCJ-02）<el-input-number v-model="form.longitude" :min="-180" :max="180" :precision="6" :step="0.000001" /></label><label>容量<el-input-number v-model="form.capacity" :min="1" :max="10000" /></label></div>
       <div class="form-row"><label>开放时间<input v-model="form.openTime" type="time"></label><label>关闭时间<input v-model="form.closeTime" type="time"></label><el-checkbox v-model="form.allDay">全天开放</el-checkbox></div>
       <label>开放日<el-checkbox-group v-model="form.openDays"><el-checkbox v-for="day in 7" :key="day" :value="day">周{{ day }}</el-checkbox></el-checkbox-group></label>
       <label>设施<el-checkbox-group v-model="form.facilities"><el-checkbox v-for="(name,key) in facilityNames" :key="key" :value="key">{{ name }}</el-checkbox></el-checkbox-group></label>

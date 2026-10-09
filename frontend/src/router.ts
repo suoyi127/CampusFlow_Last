@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { account, api, ApiFailure } from './api'
 import type { Account } from './types'
 import LoginPage from './pages/LoginPage.vue'
+import RegisterPage from './pages/RegisterPage.vue'
 import SpacesPage from './pages/SpacesPage.vue'
 import DetailPage from './pages/DetailPage.vue'
 import DataSpacesPage from './pages/DataSpacesPage.vue'
@@ -17,6 +18,7 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', component: LoginPage },
+    { path: '/register', component: RegisterPage },
     { path: '/', redirect: '/spaces' },
     { path: '/spaces', component: SpacesPage },
     { path: '/spaces/:id', component: DetailPage },
@@ -33,7 +35,7 @@ export const router = createRouter({
   scrollBehavior: (_to, _from, savedPosition) => savedPosition ?? { top: 0 },
 })
 router.beforeEach(async to => {
-  if (to.path === '/login') return true
+  if (to.path === '/login' || to.path === '/register') return true
   if (!account.value) {
     try { account.value = await api<Account>('/auth/me') }
     catch (error) {

@@ -25,7 +25,7 @@ public class SecurityConfig {
         http.addFilterBefore(new AccountSessionFilter(jdbc,json),CsrfFilter.class);
         // 三角色互不继承，不能因为是服务器管理员就获得业务数据修改权限。
         http.authorizeHttpRequests(auth -> auth
-            .requestMatchers("/api/auth/csrf", "/api/auth/login").permitAll()
+            .requestMatchers("/api/auth/csrf", "/api/auth/login", "/api/auth/register").permitAll()
             .requestMatchers("/api/data/**").hasRole("DATA_ADMIN")
             .requestMatchers("/api/system/**").hasRole("SERVER_ADMIN")
             .requestMatchers("/api/user/**").hasRole("USER")

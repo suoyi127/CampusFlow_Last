@@ -4,6 +4,8 @@
 
 地图业务统一使用 GCJ02。`StudySpace.coordinateSystem` 为 GCJ02 或 UNKNOWN；未知坐标空间不参与推荐，管理员必须显式确认后才可恢复推荐。`MapLocation` 包含经纬度、固定 GCJ02 标识及可选地址/定位精度，选点草稿在确认前不写入业务表单。演示坐标为合成数据。
 
+`RegistrationInput` 只接收用户名和密码；公开注册固定创建启用的 USER，version 为 1，密码 BCrypt 存储。唯一索引保证并发注册重名不会覆盖已有账号；账号创建与 ACCOUNT_REGISTER 审计同事务提交，不自动建立登录会话。
+
 | 结构 | 归属 | 关键关系与约束 |
 | --- | --- | --- |
 | sys_user / Account、AccountView | auth | username 唯一且不可改名；BCrypt 摘要不出接口；三角色互不继承；启停或角色改变时 version 递增，登录会话绑定认证时版本 |

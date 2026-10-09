@@ -9,7 +9,10 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
     private final AccountService accounts;
-    public AuthController(AccountService accounts) { this.accounts = accounts; }
+    private final RegistrationService registration;
+    public AuthController(AccountService accounts,RegistrationService registration) { this.accounts = accounts;this.registration=registration; }
+    @PostMapping("/register") @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.CREATED)
+    AccountView register(@jakarta.validation.Valid @RequestBody RegistrationInput input) { return registration.register(input); }
     @GetMapping("/csrf") Map<String, String> csrf(CsrfToken token) {
         return Map.of("headerName", token.getHeaderName(), "token", token.getToken());
     }

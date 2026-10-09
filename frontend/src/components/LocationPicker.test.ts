@@ -3,19 +3,41 @@ import { createApp, defineComponent, h, nextTick } from 'vue'
 import { expect, test, vi } from 'vitest'
 import LocationPicker from './LocationPicker.vue'
 import type { AMapSdk, MapEvent } from '../maps/types'
+import { ElInputNumber } from 'element-plus'
 const mocks = vi.hoisted(() => ({ load: vi.fn() }))
 vi.mock('../maps/amap', () => ({ loadAMap: mocks.load }))
 
-function mount() {
+function mount(realNumbers = false) {
   const confirm = vi.fn(), cancel = vi.fn()
   const app = createApp(LocationPicker, { initial: { longitude: 121, latitude: 31, coordinateSystem: 'GCJ02' }, onConfirm: confirm, onCancel: cancel })
   const pass = defineComponent({ inheritAttrs: false, setup: (_, { slots, attrs }) => () => h('div', [String(attrs.title ?? ''), slots.default?.()]) })
   const button = defineComponent({ inheritAttrs: false, setup: (_, { slots, attrs }) => () => h('button', { disabled: attrs.disabled, onClick: attrs.onClick as () => void }, slots.default?.()) })
   const empty = defineComponent({ setup: () => () => null })
-  app.component('ElButton', button); app.component('ElAlert', pass); app.component('ElInput', empty); app.component('ElInputNumber', empty)
+  app.component('ElButton', button); app.component('ElAlert', pass); app.component('ElInput', empty); app.component('ElInputNumber', realNumbers ? ElInputNumber : empty)
   const root = document.createElement('div'); app.mount(root)
   return { root, confirm, cancel, unmount: () => app.unmount() }
 }
+
+test('manual coordinates allow six decimal places in native form validation', async () => {
+  mocks.load.mockRejectedValueOnce(new Error('离线'))
+  const mounted = mount(true)
+  try {
+    await nextTick()
+    const inputs = mounted.root.querySelectorAll<HTMLInputElement>('input[type="number"]')
+    expect(inputs).toHaveLength(2)
+    for (const input of Array.from(inputs)) {
+      input.value = '31.230401'
+      expect(Number(input.step)).toBe(0.000001)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+    await nextTick()
+    Array.from(mounted.root.querySelectorAll('button')).find(button => button.textContent === '选择手动坐标')!.click()
+    await nextTick()
+    Array.from(mounted.root.querySelectorAll('button')).find(button => button.textContent === '确认位置')!.click()
+    expect(mounted.confirm).toHaveBeenCalledWith(expect.objectContaining({ longitude: 31.230401, latitude: 31.230401 }))
+  } finally { mounted.unmount() }
+})
 
 test('map failure and cancel do not apply or overwrite the parent position', async () => {
   mocks.load.mockRejectedValueOnce(new Error('地图未配置'))
