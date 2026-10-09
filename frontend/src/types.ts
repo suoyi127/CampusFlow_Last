@@ -3,6 +3,7 @@ export type Role = 'USER' | 'DATA_ADMIN' | 'SERVER_ADMIN'
 export interface Account { id: number; username: string; role: Role; enabled: boolean }
 export interface StudySpace {
   id: number; name: string; type: string; address: string; latitude: number; longitude: number
+  coordinateSystem: 'GCJ02' | 'UNKNOWN'
   capacity: number; openTime: string; closeTime: string; openDays: string; allDay: boolean
   facilities: string; description: string; enabled: boolean
 }

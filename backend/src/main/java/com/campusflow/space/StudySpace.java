@@ -10,6 +10,7 @@ public class StudySpace {
     public String address;
     public Double latitude;
     public Double longitude;
+    public String coordinateSystem;
     public Integer capacity;
     public String openTime;
     public String closeTime;

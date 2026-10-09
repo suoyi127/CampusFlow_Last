@@ -2,6 +2,8 @@
 
 本说明仅覆盖参与业务逻辑设计的数据结构。数据库定义以 `database/migrations` 为准，变更通过新增版本化 SQL；模块通过公开 Service 交互，不依赖其他模块 Mapper。
 
+地图业务统一使用 GCJ02。`StudySpace.coordinateSystem` 为 GCJ02 或 UNKNOWN；未知坐标空间不参与推荐，管理员必须显式确认后才可恢复推荐。`MapLocation` 包含经纬度、固定 GCJ02 标识及可选地址/定位精度，选点草稿在确认前不写入业务表单。演示坐标为合成数据。
+
 | 结构 | 归属 | 关键关系与约束 |
 | --- | --- | --- |
 | sys_user / Account、AccountView | auth | username 唯一且不可改名；BCrypt 摘要不出接口；三角色互不继承；启停或角色改变时 version 递增，登录会话绑定认证时版本 |

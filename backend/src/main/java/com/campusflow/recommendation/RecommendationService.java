@@ -36,6 +36,8 @@ public class RecommendationService {
         var summaries=reviews.summaries();
         for (var space : spaces.all()) {
             if (!space.enabled) continue;
+            // 未知坐标系不能与高德起点混算距离，管理员确认后才纳入推荐。
+            if (!"GCJ02".equals(space.coordinateSystem)) continue;
             if (query.name() != null && !space.name.contains(query.name().trim())) continue;
             if (query.type() != null && !query.type().isEmpty() && !space.type.equals(query.type())) continue;
             if (!facilities(space).containsAll(required)) continue;
@@ -68,6 +70,8 @@ public class RecommendationService {
     @Transactional(readOnly=true, isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ) public SpaceCard detail(long id, double latitude, double longitude) {
         var space = spaces.get(id);
         if (!space.enabled) throw new BusinessException(409,"SPACE_DISABLED","空间已停用，暂不可查询或提交新评价");
+        if (!"GCJ02".equals(space.coordinateSystem))
+            throw new BusinessException(409,"COORDINATES_UNCONFIRMED","空间坐标尚未由管理员确认");
         return card(space, latitude, longitude, clock.instant(),reviews.summary(id));
     }
     private SpaceCard card(StudySpace space, double latitude, double longitude, Instant now,ReviewSummary summary) {

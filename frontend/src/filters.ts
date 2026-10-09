@@ -14,5 +14,14 @@ export function queryString() {
   }
   filters.facilities.forEach(value => query.append('facilities', value))
   if (filters.startAt) query.set('startAt', new Date(filters.startAt).toISOString())
+  query.set('pageSize', '100')
   return query.toString()
+}
+
+export function detailOrigin(query: Record<string, unknown>) {
+  const latitude = typeof query.latitude === 'string' && query.latitude.trim() ? Number(query.latitude) : NaN
+  const longitude = typeof query.longitude === 'string' && query.longitude.trim() ? Number(query.longitude) : NaN
+  // 详情链接必须携带完整、合法的一对坐标，避免复制链接后距离回到默认起点。
+  return Number.isFinite(latitude) && Number.isFinite(longitude) && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180
+    ? { latitude, longitude } : { latitude: filters.latitude, longitude: filters.longitude }
 }

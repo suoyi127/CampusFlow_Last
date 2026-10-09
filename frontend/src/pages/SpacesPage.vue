@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { api } from '../api'
 import type { Page, SpaceCard } from '../types'
 import { facilityNames, typeNames, recommendationIsStale } from '../types'
@@ -7,21 +7,37 @@ import { filters, queryString } from '../filters'
 import { usePolling } from '../usePolling'
 import StatusMetrics from '../components/StatusMetrics.vue'
 import ReviewSummary from '../components/ReviewSummary.vue'
+import LocationPicker from '../components/LocationPicker.vue'
+import SpaceMap from '../components/SpaceMap.vue'
+import type { MapLocation } from '../maps/types'
 const result = ref<Page<SpaceCard> | null>(null)
-const locating = ref(false)
-const locationNote = ref('默认出发点：图书馆东门')
+const locationOpened = ref(false)
+const view = ref<'list' | 'map'>('list')
+const locationNote = ref(filters.latitude === 31.2304 && filters.longitude === 121.4737 ? '上海演示起点（非真实校园）' : '保留上次确认的出发点')
+const origin = computed<MapLocation>(() => ({ latitude: filters.latitude, longitude: filters.longitude, coordinateSystem: 'GCJ02', address: locationNote.value }))
+const detailLink = (id: number) => ({ path: `/spaces/${id}`, query: { latitude: String(filters.latitude), longitude: String(filters.longitude) } })
+let originVersion = 0
+let retry: ReturnType<typeof setTimeout> | undefined
+let active = true
 const { error, loading, refresh, elapsedSeconds } = usePolling(async signal => {
-  result.value = await api<Page<SpaceCard>>('/spaces?' + queryString(), { signal })
+  const version = originVersion
+  try {
+    const response = await api<Page<SpaceCard>>('/spaces?' + queryString(), { signal })
+    if (active && version === originVersion) result.value = response
+  } catch (failure) { if (version === originVersion) throw failure }
+  finally {
+    // 起点改变时旧请求仍可能在途；丢弃旧距离，并等轮询释放 pending 后立即重查。
+    if (active && version !== originVersion) retry = setTimeout(() => { if (active) void refresh() }, 0)
+  }
 })
-function locate() {
-  if (!navigator.geolocation) { locationNote.value = '定位不可用，可继续使用预置出发点'; return }
-  locating.value = true
-  navigator.geolocation.getCurrentPosition(position => {
-    filters.latitude = position.coords.latitude; filters.longitude = position.coords.longitude
-    locationNote.value = '已使用当前位置'; locating.value = false; void refresh()
-  }, () => { locationNote.value = '定位失败，可继续选择预置出发点'; locating.value = false }, { timeout: 8000 })
+function refreshOrigin() { originVersion++; result.value = null; void refresh() }
+onUnmounted(() => { active = false; clearTimeout(retry) })
+function confirmLocation(location: MapLocation) {
+  filters.latitude = location.latitude; filters.longitude = location.longitude
+  locationNote.value = location.address || '已确认地图起点'
+  locationOpened.value = false; refreshOrigin()
 }
-function preset() { filters.latitude = 31.2304; filters.longitude = 121.4737; locationNote.value = '默认出发点：图书馆东门'; void refresh() }
+function preset() { filters.latitude = 31.2304; filters.longitude = 121.4737; locationNote.value = '上海演示起点（非真实校园）'; refreshOrigin() }
 </script>
 
 <template>
@@ -39,22 +55,28 @@ function preset() { filters.latitude = 31.2304; filters.longitude = 121.4737; lo
       <label>预计开始时间<input v-model="filters.startAt" type="datetime-local"></label>
       <label>预计学习时长（分钟）<el-input-number v-model="filters.durationMinutes" :min="0" :max="1440" :step="30" /></label>
       <small class="muted">预计时间仅检查营业时段，不保证未来空位。</small>
-      <div class="location-controls"><span>{{ locationNote }}</span><el-button :loading="locating" @click="locate">定位</el-button><el-button @click="preset">预置点</el-button></div>
+      <div class="location-controls"><span>{{ locationNote }}</span><el-button @click="locationOpened = true">定位 / 地图选点</el-button><el-button @click="preset">预置点</el-button></div>
       <el-button native-type="submit" type="primary" :loading="loading">应用条件</el-button>
     </form>
     <section class="results">
       <el-alert v-if="error" :title="error" type="error" :closable="false"><el-button text @click="refresh">重试</el-button><span>保留筛选条件，过期指标显示未知。</span></el-alert>
       <el-alert v-for="warning in result?.warnings" :key="warning" :title="warning" type="info" :closable="false" />
       <div class="results-toolbar"><span>找到 <strong>{{ result?.total ?? '—' }}</strong> 个空间</span><el-select v-model="filters.sort" aria-label="排序方式" @change="refresh"><el-option label="综合推荐" value="SCORE" /><el-option label="距离最近" value="DISTANCE" /><el-option label="最安静" value="QUIET" /><el-option label="最不拥挤" value="OCCUPANCY" /><el-option label="设施最完善" value="FACILITY" /></el-select></div>
+      <p class="muted">当前展示 {{ result?.items.length ?? 0 }} / {{ result?.total ?? '—' }} 个结果（最多 100 个），距离为直线距离。</p>
+      <el-radio-group v-model="view" aria-label="展示方式"><el-radio-button value="list">列表</el-radio-button><el-radio-button value="map">地图</el-radio-button></el-radio-group>
       <div v-if="loading && !result" class="panel"><el-skeleton :rows="5" animated /></div>
       <el-empty v-else-if="result && !result.total" description="没有满足全部条件的空间" />
+      <SpaceMap v-if="view === 'map' && result" :cards="result.items" :origin="origin" :elapsed="elapsedSeconds" />
+      <template v-if="view === 'list'">
       <article v-for="card in result?.items" :key="card.space.id" class="panel space-card">
-        <div class="card-heading"><div><span class="space-type">{{ typeNames[card.space.type] }}</span><RouterLink :to="`/spaces/${card.space.id}`"><h2>{{ card.space.name }}</h2></RouterLink><p class="muted">{{ card.space.address }} · {{ Math.round(card.distanceMeters) }} 米</p></div><el-tag :type="card.openNow ? 'success' : 'info'">{{ card.openNow ? '开放中' : '未开放' }}</el-tag></div>
+        <div class="card-heading"><div><span class="space-type">{{ typeNames[card.space.type] }}</span><RouterLink :to="detailLink(card.space.id)"><h2>{{ card.space.name }}</h2></RouterLink><p class="muted">{{ card.space.address }} · {{ Math.round(card.distanceMeters) }} 米</p></div><el-tag :type="card.openNow ? 'success' : 'info'">{{ card.openNow ? '开放中' : '未开放' }}</el-tag></div>
         <StatusMetrics :status="card.status" :elapsed="elapsedSeconds" />
         <ReviewSummary :summary="card.reviewSummary" />
-        <div class="card-bottom"><div class="facility-tags"><el-tag v-for="item in card.space.facilities.split(',').filter(Boolean)" :key="item" type="info" size="small">{{ facilityNames[item] }}</el-tag></div><RouterLink :to="`/spaces/${card.space.id}`">查看详情 →</RouterLink></div>
+        <div class="card-bottom"><div class="facility-tags"><el-tag v-for="item in card.space.facilities.split(',').filter(Boolean)" :key="item" type="info" size="small">{{ facilityNames[item] }}</el-tag></div><RouterLink :to="detailLink(card.space.id)">查看详情 →</RouterLink></div>
         <p class="card-reason">{{ error || recommendationIsStale(card.status, elapsedSeconds) ? '状态等待刷新，推荐理由和得分暂不可用。' : card.reasons.join(' · ') }}<span v-if="!error && !recommendationIsStale(card.status, elapsedSeconds)"> · 综合 {{ card.score.toFixed(1) }} 分</span></p>
       </article>
+      </template>
     </section>
   </div>
+  <el-dialog v-model="locationOpened" title="选择搜索起点" width="min(860px, 96vw)"><LocationPicker v-if="locationOpened" :initial="origin" :allow-locate="true" @confirm="confirmLocation" @cancel="locationOpened = false" /></el-dialog>
 </template>

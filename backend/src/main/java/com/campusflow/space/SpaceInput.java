@@ -16,5 +16,6 @@ public record SpaceInput(
     @NotNull Boolean allDay,
     @NotNull List<String> facilities,
     @NotNull @Size(max=1000) String description,
-    @NotNull Boolean enabled
+    @NotNull Boolean enabled,
+    @Pattern(regexp="GCJ02",message="仅支持高德 GCJ02 坐标") String coordinateSystem
 ) { }

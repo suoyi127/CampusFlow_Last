@@ -4,14 +4,15 @@ import { useRoute } from 'vue-router'
 import { api } from '../api'
 import type { SpaceCard } from '../types'
 import { facilityNames, typeNames, metricIsRecent } from '../types'
-import { filters } from '../filters'
+import { detailOrigin } from '../filters'
 import { usePolling } from '../usePolling'
 import StatusMetrics from '../components/StatusMetrics.vue'
 import SpaceReviews from '../components/SpaceReviews.vue'
 const route = useRoute()
 const card = ref<SpaceCard | null>(null)
 const { error, loading, refresh, elapsedSeconds } = usePolling(async signal => {
-  card.value = await api<SpaceCard>(`/spaces/${route.params.id}?latitude=${filters.latitude}&longitude=${filters.longitude}`, { signal })
+  const origin = detailOrigin(route.query)
+  card.value = await api<SpaceCard>(`/spaces/${route.params.id}?latitude=${origin.latitude}&longitude=${origin.longitude}`, { signal })
 })
 </script>
 
