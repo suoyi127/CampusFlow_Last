@@ -16,11 +16,15 @@ public class StatusService {
     private final SimulationService simulation;
     private final Clock clock;
     private final ConfigService configs;
-    public StatusService(JdbcTemplate jdbc, SimulationService simulation, Clock clock,ConfigService configs) {
+    private final com.campusflow.hardware.HardwareService hardware;
+    public StatusService(JdbcTemplate jdbc, SimulationService simulation, Clock clock,ConfigService configs,com.campusflow.hardware.HardwareService hardware) {
         this.jdbc = jdbc; this.simulation = simulation; this.clock = clock;this.configs=configs;
+        this.hardware=hardware;
     }
-    @Transactional(readOnly=true) public SpaceStatus current(StudySpace space) { return current(space, clock.instant()); }
+    @Transactional(readOnly=true, isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ) public SpaceStatus current(StudySpace space) { return current(space, clock.instant()); }
+    @Transactional(readOnly=true, isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     public SpaceStatus current(StudySpace space, Instant now) {
+        if(hardware.bound(space.id)) return hardware.current(space,now,simulation.runId());
         var config=configs.current();
         long run = simulation.runId();
         // 容量降低后，异常回退不能重新显示超过现容量的历史人数。

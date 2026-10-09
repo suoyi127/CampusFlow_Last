@@ -46,8 +46,7 @@ public class SpaceService {
             throw new BusinessException(400,"COORDINATES_UNCONFIRMED","请确认空间位置并明确使用 GCJ02 坐标");
         if (id != null) {
             // 与模拟共用空间行锁，容量校验和写入期间不会新增签到。
-            long people = simulation.currentPeople(id);
-            if (people > input.capacity()) throw new BusinessException(409, "CAPACITY_TOO_SMALL", "容量不能低于当前在场人数 " + people);
+            simulation.validateCapacity(space,input.capacity());
         }
         space.name = input.name().trim(); space.type = input.type(); space.address = input.address().trim();
         space.latitude = input.latitude(); space.longitude = input.longitude(); space.capacity = input.capacity();
