@@ -93,12 +93,12 @@ public class HardwareService {
     public boolean bound(long space) { return bindings.containsSpace(space); }
     public record CapacityPeople(Long count,Instant sampledAt,String state) {}
     public CapacityPeople capacityPeople(StudySpace space) {
-        var rows=jdbc.queryForList("SELECT headcount,sampled_at FROM hardware_record WHERE space_id=? AND device_id=? ORDER BY sampled_at DESC,CASE WHEN kind='EVENT' THEN 1 ELSE 0 END DESC,event_sequence DESC,id DESC LIMIT 1",space.id,bindings.device(space.id));
+        var rows=jdbc.queryForList("SELECT headcount,sampled_at,people_valid FROM hardware_record WHERE space_id=? AND device_id=? ORDER BY sampled_at DESC,CASE WHEN kind='EVENT' THEN 1 ELSE 0 END DESC,event_sequence DESC,id DESC LIMIT 1",space.id,bindings.device(space.id));
         if(rows.isEmpty()) return new CapacityPeople(null,null,"MISSING");
         long count=((Number)rows.getFirst().get("headcount")).longValue();
         Instant sampledAt=time(rows.getFirst().get("sampled_at"));
         String state=StatusService.state(sampledAt,clock.instant(),configs.current().validitySeconds());
-        if(count>space.capacity) state="INVALID";
+        if(count>space.capacity || !Boolean.TRUE.equals(rows.getFirst().get("people_valid"))) state="INVALID";
         // 原始读数保留供检查，但无效/过期人数不能冒充可用于降低容量的在场人数。
         return new CapacityPeople(count,sampledAt,state);
     }
@@ -113,20 +113,24 @@ public class HardwareService {
         var peopleRows=jdbc.queryForList("SELECT * FROM hardware_record WHERE space_id=? AND device_id=? ORDER BY sampled_at DESC,CASE WHEN kind='EVENT' THEN 1 ELSE 0 END DESC,event_sequence DESC,id DESC LIMIT 1",space.id,device);
         var noiseRows=jdbc.queryForList("SELECT * FROM hardware_record WHERE space_id=? AND device_id=? AND kind='TELEMETRY' ORDER BY sampled_at DESC,id DESC LIMIT 1",space.id,device);
         var lastReceipt=jdbc.queryForObject("SELECT MAX(received_at) FROM hardware_record WHERE space_id=? AND device_id=?",LocalDateTime.class,space.id,device);
-        String online=lastReceipt!=null && "VALID".equals(StatusService.state(lastReceipt.toInstant(ZoneOffset.UTC),now,config.validitySeconds())) ? "ONLINE" : "OFFLINE";
+        boolean enabled=Boolean.TRUE.equals(jdbc.queryForObject("SELECT enabled FROM hardware_device WHERE device_id=?",Boolean.class,device));
+        String online=enabled && lastReceipt!=null && "VALID".equals(StatusService.state(lastReceipt.toInstant(ZoneOffset.UTC),now,config.validitySeconds())) ? "ONLINE" : "OFFLINE";
         Instant peopleAt=peopleRows.isEmpty()?null:time(peopleRows.getFirst().get("sampled_at"));
         Instant noiseAt=noiseRows.isEmpty()?null:time(noiseRows.getFirst().get("sampled_at"));
         String peopleState=StatusService.state(peopleAt,now,config.validitySeconds());
         String noiseState=StatusService.state(noiseAt,now,config.validitySeconds());
         long count=peopleRows.isEmpty()?0:((Number)peopleRows.getFirst().get("headcount")).longValue();
-        if(count>space.capacity) peopleState="INVALID";
-        if(!noiseRows.isEmpty() && !Boolean.TRUE.equals(noiseRows.getFirst().get("sound_valid"))) noiseState="INVALID";
-        if("OFFLINE".equals(online)) noiseState="OFFLINE";
+        if(count>space.capacity || (!peopleRows.isEmpty() && !Boolean.TRUE.equals(peopleRows.getFirst().get("people_valid")))) peopleState="INVALID";
+        if(!noiseRows.isEmpty() && (!Boolean.TRUE.equals(noiseRows.getFirst().get("sound_valid")) || !Boolean.TRUE.equals(noiseRows.getFirst().get("noise_valid")))) noiseState="INVALID";
+        if("OFFLINE".equals(online)) {
+            noiseState="OFFLINE";
+            if(!enabled) peopleState="OFFLINE";
+        }
         Integer people="VALID".equals(peopleState)?(int)count:null;
         Double db="VALID".equals(noiseState)?((Number)noiseRows.getFirst().get("decibel")).doubleValue():null;
         Double typical=null;
         if(db!=null) {
-            var window=jdbc.queryForList("SELECT decibel FROM hardware_record WHERE space_id=? AND device_id=? AND kind='TELEMETRY' AND sound_valid=TRUE AND sampled_at>=? AND sampled_at<=? ORDER BY decibel",Double.class,space.id,device,LocalDateTime.ofInstant(now.minusSeconds(config.noiseWindowSeconds()),ZoneOffset.UTC),LocalDateTime.ofInstant(now,ZoneOffset.UTC));
+            var window=jdbc.queryForList("SELECT decibel FROM hardware_record WHERE space_id=? AND device_id=? AND kind='TELEMETRY' AND sound_valid=TRUE AND noise_valid=TRUE AND sampled_at>=? AND sampled_at<=? ORDER BY decibel",Double.class,space.id,device,LocalDateTime.ofInstant(now.minusSeconds(config.noiseWindowSeconds()),ZoneOffset.UTC),LocalDateTime.ofInstant(now,ZoneOffset.UTC));
             if(!window.isEmpty()) typical=StatusService.median(window);
         }
         return new SpaceStatus(space.id,run,peopleRows.isEmpty()?null:((Number)peopleRows.getFirst().get("id")).longValue(),people,space.capacity,people==null?null:(double)people/space.capacity,db,typical,typical==null?null:StatusService.quietLevel(typical),peopleState,noiseState,online,peopleAt,noiseAt,now,config.validitySeconds(),"HARDWARE");

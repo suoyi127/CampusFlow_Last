@@ -1,8 +1,6 @@
 # 硬件接收业务数据结构
 
-V7 新增两张表，与模拟的 simulation_run / sim_visit 分开，模拟重置不会删除硬件数据。
-
-容量校验使用 `CapacityPeople(count, sampledAt, state)`，原始人数不截断、不伪造为零。硬件空间只有降低容量时要求新鲜 VALID 人数，并检查新容量不低于人数；无读数、过期、未来或超过现容量的读数返回 PEOPLE_UNCONFIRMED。普通编辑、停用及不降低容量允许保存。模拟空间继续按实际模拟在场人数校验。
+V6 新增两张表，与模拟的 simulation_run / sim_visit 分开，模拟重置不会删除硬件数据。
 
 ## hardware_device（V8）
 

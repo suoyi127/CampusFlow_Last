@@ -1,7 +1,6 @@
 package com.campusflow.hardware;
 
 import com.campusflow.common.BusinessException;
-import com.campusflow.simulation.SimulationService;
 import com.campusflow.space.SpaceMapper;
 import com.campusflow.status.StatusService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,12 +36,12 @@ class HardwareReceptionTest {
     @Autowired HardwareService service;
     @Autowired StatusService status;
     @Autowired SpaceMapper spaces;
-    @Autowired SimulationService simulation;
     @Autowired JdbcTemplate jdbc;
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
     @Autowired HardwareDeviceService devices;
     @Autowired HardwareDiscovery discovery;
+    @Autowired com.campusflow.status.InspectionService inspection;
     long now(){return clock.instant().getEpochSecond();}
     @Autowired com.campusflow.space.SpaceService spaceService;
     private void saveSpace(int capacity,boolean enabled) {
@@ -160,10 +159,9 @@ class HardwareReceptionTest {
         var admin=mvc.perform(post("/api/auth/login").with(csrf()).param("username","data_admin").param("password","Demo@123456")).andExpect(status().isOk()).andReturn().getRequest().getSession(false);
         mvc.perform(get("/api/data/hardware-records?kind=EVENT&spaceId=6").session((org.springframework.mock.web.MockHttpSession)admin)).andExpect(status().isOk()).andExpect(jsonPath("items[0].eventType").value("CHECK_IN"));
     }
-    @Test void oldBackfillDoesNotReplaceNewTelemetryAndSimulationResetPreservesHardware() {
+    @Test void oldBackfillDoesNotReplaceNewTelemetryAndReplayPreservesHardware() {
         service.telemetry(new Telemetry("AREA_A_001",now(),4L,65.4,true));
         service.event(event("1",EventType.CHECK_IN,1,now()-120));
-        simulation.tick();simulation.reset("test");
         var current=status.current(spaces.selectById(6));
         assertEquals("HARDWARE",current.source());assertEquals(4,current.currentPeople());assertEquals(65.4,current.noiseDb());
         assertEquals(2L,service.records(6L,null,null,1,20).get("total"));
@@ -202,4 +200,39 @@ class HardwareReceptionTest {
             assertThrows(com.fasterxml.jackson.core.JsonProcessingException.class,()->receiver.receive("checkin/AREA_A_001/events","{} {}",false));
         } finally { receiver.stop(); }
     }
+    @Test void manualInspectionValidityControlsRealMetricsWithoutChangingPayload() {
+        var receipt=service.telemetry(new Telemetry("AREA_A_001",now(),4L,55.0,true));
+        inspection.validity(com.campusflow.status.InspectionService.Kind.NOISE,receipt.recordId(),false,"传感器检查","data_admin");
+        var current=status.current(spaces.selectById(6));
+        assertEquals(4,current.currentPeople());
+        assertNull(current.noiseDb());
+        assertEquals("INVALID",current.noiseState());
+        inspection.validity(com.campusflow.status.InspectionService.Kind.PEOPLE,receipt.recordId(),false,"人数检查","data_admin");
+        assertNull(status.current(spaces.selectById(6)).currentPeople());
+        assertEquals(55.0,jdbc.queryForObject("SELECT decibel FROM hardware_record WHERE id=?",Double.class,receipt.recordId()));
+        inspection.validity(com.campusflow.status.InspectionService.Kind.PEOPLE,receipt.recordId(),true,"检查完成","data_admin");
+        inspection.validity(com.campusflow.status.InspectionService.Kind.NOISE,receipt.recordId(),true,"检查完成","data_admin");
+        assertEquals(55.0,status.current(spaces.selectById(6)).noiseDb());
+    }
+
+    @Test void disabledHardwareCannotAppearOnlineOrExposeFreshMetrics() {
+        service.telemetry(new Telemetry("AREA_A_001",now(),4L,55.0,true));
+        jdbc.update("UPDATE hardware_device SET enabled=FALSE WHERE device_id='AREA_A_001'");
+        var current=status.current(spaces.selectById(6));
+        assertEquals("OFFLINE",current.deviceState());
+        assertNull(current.currentPeople());
+        assertNull(current.noiseDb());
+        assertEquals("OFFLINE",inspection.devices().getFirst().get("status"));
+    }
+
+    @Test void visitInspectionUsesPhysicalEventFactsInsteadOfInventedPeople() {
+        service.event(event("1",EventType.CHECK_IN,2,now()));
+        var response=inspection.records(com.campusflow.status.InspectionService.Kind.VISIT,6L,null,1,20);
+        var items=(java.util.List<java.util.Map<String,Object>>)response.get("items");
+        assertEquals("AREA_A_001",items.getFirst().get("deviceId"));
+        assertEquals("CHECK_IN",items.getFirst().get("eventType"));
+        assertEquals(2L,items.getFirst().get("headcount"));
+        assertFalse(items.getFirst().containsKey("virtualPersonId"));
+    }
+
 }

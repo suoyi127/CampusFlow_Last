@@ -1,3 +1,4 @@
+> 2026-10-26 更新：当前后端已统一为真实 MySQL、8080端口，local不再使用H2或生成模拟数据。请以项目README和scripts/initialize-real-database.ps1、scripts/start-backend-local.ps1为准。以下旧环境记录中的18080/H2/演示配置仅作为历史记录，不能用于当前启动。MQTT实际接收协议与接线信息仍可参考；实际设备地址需重新核实。
 # 硬件端与后端环境、配置和启动说明
 
 适用日期：2026年10月9日。硬件工程：`D:\collectionOfCode\program\campus\CheckIn\hardware`；后端工程：`D:\collectionOfCode\program\campus\CampusFlow_Last\backend`。硬件使用 ESP-IDF **5.4.4**。

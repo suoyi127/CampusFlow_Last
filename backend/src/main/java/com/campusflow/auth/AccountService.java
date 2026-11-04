@@ -22,5 +22,5 @@ public class AccountService implements UserDetailsService {
         if (account == null || !account.enabled) throw new BusinessException(401, "ACCOUNT_DISABLED", "账号已停用");
         return account;
     }
-    public long count() { return mapper.selectCount(null); }
+    public long count() { return mapper.selectCount(new QueryWrapper<Account>().eq("data_origin", "REAL")); }
 }

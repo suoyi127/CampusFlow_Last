@@ -21,8 +21,10 @@ public class RecommendationService {
         this.spaces = spaces; this.statuses = statuses; this.clock = clock;this.reviews=reviews;this.configs=configs;
     }
     @Transactional(readOnly=true, isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ) public Map<String,Object> list(SpaceQuery query) {
-        double latitude = query.latitude() == null ? 31.2304 : query.latitude();
-        double longitude = query.longitude() == null ? 121.4737 : query.longitude();
+        if (query.latitude() == null || query.longitude() == null)
+            throw new BusinessException(400,"LOCATION_REQUIRED","请提供真实 GCJ-02 起点坐标");
+        double latitude = query.latitude();
+        double longitude = query.longitude();
         if (!Double.isFinite(latitude) || !Double.isFinite(longitude) || (query.maxDistance() != null && !Double.isFinite(query.maxDistance()))
             || (query.maxOccupancy() != null && !Double.isFinite(query.maxOccupancy())))
             throw new BusinessException(400,"INVALID_INPUT","查询参数必须为有限数值");

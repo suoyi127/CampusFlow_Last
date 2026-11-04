@@ -20,8 +20,12 @@
   <build>
     <resources>
       <resource><directory>src/main/resources</directory></resource>
-      <resource><directory>../database/migrations</directory><targetPath>db/migration</targetPath></resource>
+      <resource><directory>../database/real-migrations</directory><targetPath>db/real-migration</targetPath></resource>
     </resources>
+    <testResources>
+      <testResource><directory>src/test/resources</directory></testResource>
+      <testResource><directory>../database/migrations</directory><targetPath>db/migration</targetPath></testResource>
+    </testResources>
     <plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins>
   </build>
 </project>
