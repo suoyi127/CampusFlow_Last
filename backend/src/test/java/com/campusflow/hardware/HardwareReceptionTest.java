@@ -66,6 +66,17 @@ class HardwareReceptionTest {
         assertEquals("PEOPLE_UNCONFIRMED",assertThrows(BusinessException.class,()->saveSpace(9,true)).code);
         assertDoesNotThrow(()->saveSpace(10,false));
     }
+    @Test void disabledHardwareCannotAuthorizeCapacityReduction() {
+        service.telemetry(new Telemetry("AREA_A_001",now(),4L,55.0,true));
+        jdbc.update("UPDATE hardware_device SET enabled=FALSE WHERE device_id='AREA_A_001'");
+        assertEquals("PEOPLE_UNCONFIRMED",assertThrows(BusinessException.class,()->saveSpace(10,true)).code);
+        assertEquals(16,spaces.selectById(6).capacity);
+        assertEquals("OFFLINE",service.capacityPeople(spaces.selectById(6)).state());
+        assertDoesNotThrow(()->saveSpace(16,false));
+        assertDoesNotThrow(()->saveSpace(20,true));
+        jdbc.update("UPDATE hardware_device SET enabled=TRUE WHERE device_id='AREA_A_001'");
+        assertDoesNotThrow(()->saveSpace(10,true));
+    }
     Event event(String id,EventType type,long count,long at){return new Event("AREA_A_001",id,at,type,count);}
     @BeforeEach void prepare(){
         clock.now=Instant.parse("2026-10-09T02:00:00Z");

@@ -13,7 +13,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
-@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test") @Transactional
+// 未配置地图的场景必须独立于开发机上的真实密钥。
+@SpringBootTest(properties={"CF_AMAP_JS_KEY=", "CF_AMAP_SECURITY_JS_CODE="})
+@AutoConfigureMockMvc @ActiveProfiles("test") @Transactional
 class AmapIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;

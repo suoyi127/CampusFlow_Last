@@ -93,7 +93,11 @@ public class HardwareService {
     public boolean bound(long space) { return bindings.containsSpace(space); }
     public record CapacityPeople(Long count,Instant sampledAt,String state) {}
     public CapacityPeople capacityPeople(StudySpace space) {
-        var rows=jdbc.queryForList("SELECT headcount,sampled_at,people_valid FROM hardware_record WHERE space_id=? AND device_id=? ORDER BY sampled_at DESC,CASE WHEN kind='EVENT' THEN 1 ELSE 0 END DESC,event_sequence DESC,id DESC LIMIT 1",space.id,bindings.device(space.id));
+        // 停用设备的历史读数不能作为降低容量的依据，与实时状态保持一致。
+        String device=bindings.device(space.id);
+        if(!Boolean.TRUE.equals(jdbc.queryForObject("SELECT enabled FROM hardware_device WHERE device_id=?",Boolean.class,device)))
+            return new CapacityPeople(null,null,"OFFLINE");
+        var rows=jdbc.queryForList("SELECT headcount,sampled_at,people_valid FROM hardware_record WHERE space_id=? AND device_id=? ORDER BY sampled_at DESC,CASE WHEN kind='EVENT' THEN 1 ELSE 0 END DESC,event_sequence DESC,id DESC LIMIT 1",space.id,device);
         if(rows.isEmpty()) return new CapacityPeople(null,null,"MISSING");
         long count=((Number)rows.getFirst().get("headcount")).longValue();
         Instant sampledAt=time(rows.getFirst().get("sampled_at"));

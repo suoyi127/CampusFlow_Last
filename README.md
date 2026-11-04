@@ -17,9 +17,7 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-real-database.ps1
 构建和启动：
 
 ```powershell
-cd backend
-mvn clean verify
-cd ..
+powershell -ExecutionPolicy Bypass -File scripts/test-backend-local.ps1
 powershell -ExecutionPolicy Bypass -File scripts/start-backend-local.ps1
 ```
 
