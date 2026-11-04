@@ -1,7 +1,6 @@
 package com.campusflow.status;
 
 import com.campusflow.space.StudySpace;
-import com.campusflow.simulation.SimulationService;
 import com.campusflow.system.ConfigService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -13,53 +12,21 @@ import java.util.*;
 @Service
 public class StatusService {
     private final JdbcTemplate jdbc;
-    private final SimulationService simulation;
     private final Clock clock;
     private final ConfigService configs;
     private final com.campusflow.hardware.HardwareService hardware;
-    public StatusService(JdbcTemplate jdbc, SimulationService simulation, Clock clock,ConfigService configs,com.campusflow.hardware.HardwareService hardware) {
-        this.jdbc = jdbc; this.simulation = simulation; this.clock = clock;this.configs=configs;
+    public StatusService(JdbcTemplate jdbc, Clock clock,ConfigService configs,com.campusflow.hardware.HardwareService hardware) {
+        this.jdbc = jdbc; this.clock = clock;this.configs=configs;
         this.hardware=hardware;
     }
     @Transactional(readOnly=true, isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ) public SpaceStatus current(StudySpace space) { return current(space, clock.instant()); }
     @Transactional(readOnly=true, isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     public SpaceStatus current(StudySpace space, Instant now) {
-        if(hardware.bound(space.id)) return hardware.current(space,now,simulation.runId());
-        var config=configs.current();
-        long run = simulation.runId();
-        // 容量降低后，异常回退不能重新显示超过现容量的历史人数。
-        var peopleRows = jdbc.queryForList("SELECT * FROM space_snapshot WHERE run_id=? AND space_id=? AND valid=TRUE AND current_people<=? ORDER BY sampled_at DESC,id DESC LIMIT 1", run, space.id, space.capacity);
-        var noiseRows = jdbc.queryForList("SELECT * FROM noise_sample WHERE run_id=? AND space_id=? AND valid=TRUE ORDER BY sampled_at DESC,id DESC LIMIT 1", run, space.id);
-        String device = jdbc.queryForObject("SELECT status FROM noise_device WHERE space_id=?", String.class, space.id);
-        Instant peopleAt = peopleRows.isEmpty() ? null : timestamp(peopleRows.getFirst().get("sampled_at"));
-        Instant noiseAt = noiseRows.isEmpty() ? null : timestamp(noiseRows.getFirst().get("sampled_at"));
-        String peopleState = state(peopleAt, now,config.validitySeconds());
-        String noiseState = "OFFLINE".equals(device) ? "OFFLINE" : state(noiseAt, now,config.validitySeconds());
-        if (peopleRows.isEmpty()) {
-            var invalid = jdbc.queryForList("SELECT sampled_at FROM space_snapshot WHERE run_id=? AND space_id=? ORDER BY sampled_at DESC,id DESC LIMIT 1",run,space.id);
-            if (!invalid.isEmpty()) { peopleState = "INVALID"; peopleAt = timestamp(invalid.getFirst().get("sampled_at")); }
-        }
-        if (noiseRows.isEmpty()) {
-            var invalid = jdbc.queryForList("SELECT sampled_at FROM noise_sample WHERE run_id=? AND space_id=? ORDER BY sampled_at DESC,id DESC LIMIT 1",run,space.id);
-            if (!invalid.isEmpty()) {
-                noiseAt = timestamp(invalid.getFirst().get("sampled_at"));
-                if (!"OFFLINE".equals(device)) noiseState = "INVALID";
-            }
-        }
-        Integer people = "VALID".equals(peopleState) ? ((Number) peopleRows.getFirst().get("current_people")).intValue() : null;
-        Double latest = "VALID".equals(noiseState) ? ((Number) noiseRows.getFirst().get("noise_db")).doubleValue() : null;
-        Double typical = null;
-        if (latest != null) {
-            // 最新读数有效才计算窗口，中位数不冒充等效声级，也不取分贝算术平均。
-            var window = jdbc.queryForList("SELECT noise_db FROM noise_sample WHERE run_id=? AND space_id=? AND valid=TRUE AND sampled_at>=? AND sampled_at<=? ORDER BY noise_db",
-                Double.class, run, space.id, LocalDateTime.ofInstant(now.minusSeconds(config.noiseWindowSeconds()), ZoneOffset.UTC), LocalDateTime.ofInstant(now, ZoneOffset.UTC));
-            if (!window.isEmpty()) typical = median(window);
-        }
-        Long version = peopleRows.isEmpty() ? null : ((Number) peopleRows.getFirst().get("id")).longValue();
-        return new SpaceStatus(space.id, run, version, people, space.capacity,
-            people == null ? null : Math.min(1.0, (double)people / space.capacity), latest, typical,
-            typical == null ? null : quietLevel(typical), peopleState, noiseState, device,
-            peopleAt, noiseAt, now, config.validitySeconds(), "SIMULATED");
+        if(hardware.bound(space.id)) return hardware.current(space,now,0);
+        // 未绑定设备时不推断人数或噪声，也不回退历史模拟表。
+        return new SpaceStatus(space.id, 0, null, null, space.capacity, null, null, null,
+            null, "MISSING", "MISSING", "OFFLINE", null, null, now,
+            configs.current().validitySeconds(), "HARDWARE");
     }
     static Instant timestamp(Object value) {
         // MySQL 驱动返回 LocalDateTime，H2 返回 Timestamp；两者都按约定的 UTC 解释。

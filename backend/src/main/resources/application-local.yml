@@ -1,7 +1,4 @@
+# 本机模式与生产共用真实 MySQL 配置，不再切换 H2 或初始化演示账号。
 spring:
-  datasource:
-    url: jdbc:h2:file:./data/campusflow;MODE=MySQL;DATABASE_TO_LOWER=TRUE
-    username: sa
-    password: ""
-campusflow:
-  demo-enabled: true
+  config:
+    import: optional:file:./data/checkin-local.properties

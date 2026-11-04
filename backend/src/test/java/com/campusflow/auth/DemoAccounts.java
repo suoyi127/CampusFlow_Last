@@ -11,6 +11,7 @@ import java.time.ZoneOffset;
 @Component
 @ConditionalOnProperty(name = "campusflow.demo-enabled", havingValue = "true")
 public class DemoAccounts implements ApplicationRunner {
+    @org.springframework.beans.factory.annotation.Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
     private final AccountMapper mapper;
     private final AccountService service;
     private final PasswordEncoder encoder;
@@ -18,6 +19,7 @@ public class DemoAccounts implements ApplicationRunner {
         this.mapper = mapper; this.service = service; this.encoder = encoder;
     }
     @Override public void run(ApplicationArguments args) {
+        jdbc.update("UPDATE study_space SET data_origin='REAL'");
         String[][] accounts = {{"student", "USER"}, {"data_admin", "DATA_ADMIN"}, {"server_admin", "SERVER_ADMIN"}};
         for (var entry : accounts) {
             if (service.find(entry[0]) != null) continue;

@@ -20,7 +20,7 @@ const { error, loading, refresh, elapsedSeconds } = usePolling(async signal => {
   <RouterLink to="/spaces" class="back-link">← 返回空间列表</RouterLink>
   <el-alert v-if="error" :title="error" type="error" :closable="false"><el-button text @click="refresh">重试</el-button></el-alert>
   <div v-if="loading && !card" class="panel"><el-skeleton :rows="6" animated /></div>
-  <template v-if="card"><div class="page-heading"><div><div class="eyebrow">{{ typeNames[card.space.type] }} / #{{ card.space.id }}</div><h1>{{ card.space.name }}</h1><p class="muted">{{ card.space.address }}</p></div><el-tag effect="plain">模拟状态 · 运行 #{{ card.status.simulationRunId }}</el-tag></div>
+  <template v-if="card"><div class="page-heading"><div><div class="eyebrow">{{ typeNames[card.space.type] }} / #{{ card.space.id }}</div><h1>{{ card.space.name }}</h1><p class="muted">{{ card.space.address }}</p></div><el-tag effect="plain">{{ card.status.source === 'HARDWARE' ? '设备实测' : `模拟状态 · 运行 #${card.status.simulationRunId}` }}</el-tag></div>
     <section class="panel detail-panel"><h2>此刻的空间</h2><StatusMetrics :status="card.status" :elapsed="elapsedSeconds" /><p class="muted">当前读数 {{ metricIsRecent(card.status, card.status.noiseUpdatedAt, card.status.noiseState, elapsedSeconds) ? `${card.status.noiseDb} dB` : '暂无近期数据' }} · 设备 {{ card.status.deviceState === 'ONLINE' ? '正常' : '离线' }} · 近期典型噪声采用配置窗口内中位数</p></section>
     <section class="panel detail-panel space-profile">
       <div class="profile-heading"><h2>空间资料</h2><el-tag size="small" effect="plain">{{ typeNames[card.space.type] }}</el-tag></div>

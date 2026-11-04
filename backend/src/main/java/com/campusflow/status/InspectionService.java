@@ -1,76 +1,120 @@
 package com.campusflow.status;
 
 import com.campusflow.common.BusinessException;
-import com.campusflow.simulation.SimulationService;
 import com.campusflow.space.SpaceMapper;
 import com.campusflow.system.AuditService;
+import com.campusflow.system.ConfigService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
-import java.time.Clock;
+import java.time.*;
 import java.util.*;
 
 @Service
 public class InspectionService {
     public enum Kind { PEOPLE, NOISE, VISIT }
     private final JdbcTemplate jdbc;
-    private final SimulationService simulation;
     private final SpaceMapper spaces;
     private final AuditService audit;
     private final Clock clock;
-    public InspectionService(JdbcTemplate jdbc, SimulationService simulation, SpaceMapper spaces, AuditService audit, Clock clock) {
-        this.jdbc = jdbc; this.simulation = simulation; this.spaces = spaces; this.audit = audit; this.clock = clock;
+    private final ConfigService configs;
+
+    public InspectionService(JdbcTemplate jdbc, SpaceMapper spaces, AuditService audit,
+        Clock clock, ConfigService configs) {
+        this.jdbc = jdbc;
+        this.spaces = spaces;
+        this.audit = audit;
+        this.clock = clock;
+        this.configs = configs;
     }
-    private String table(Kind kind) {
-        return switch (kind) { case PEOPLE -> "space_snapshot"; case NOISE -> "noise_sample"; case VISIT -> "sim_visit"; };
+
+    private String restriction(Kind kind) {
+        return switch (kind) {
+            case PEOPLE -> "1=1";
+            case NOISE -> "kind='TELEMETRY'";
+            case VISIT -> "kind='EVENT'";
+        };
     }
-    @Transactional(readOnly=true, isolation=Isolation.REPEATABLE_READ)
-    public Map<String,Object> records(Kind kind, Long spaceId, Boolean valid, int page, int pageSize) {
-        if (kind == Kind.VISIT && valid != null) throw new BusinessException(400,"INVALID_FILTER","到访记录不使用有效标记筛选");
-        long run = simulation.runId();
-        var params = new ArrayList<Object>(); params.add(run);
-        String where = " WHERE run_id=?";
-        if (spaceId != null) { where += " AND space_id=?"; params.add(spaceId); }
-        if (valid != null) { where += " AND valid=?"; params.add(valid); }
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM " + table(kind) + where,Long.class,params.toArray());
-        var queryParams = new ArrayList<>(params); queryParams.add(pageSize); queryParams.add((long)(page-1)*pageSize);
-        var rows = jdbc.query("SELECT * FROM " + table(kind) + where + " ORDER BY id DESC LIMIT ? OFFSET ?", (rs,index) -> {
-            var row = new LinkedHashMap<String,Object>();
-            row.put("id",rs.getLong("id")); row.put("runId",rs.getLong("run_id")); row.put("spaceId",rs.getLong("space_id"));
+
+    private String validityColumn(Kind kind) {
+        return kind == Kind.NOISE ? "noise_valid" : "people_valid";
+    }
+
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public Map<String, Object> records(Kind kind, Long spaceId, Boolean valid, int page, int pageSize) {
+        if (kind == Kind.VISIT && valid != null)
+            throw new BusinessException(400, "INVALID_FILTER", "设备事件不使用有效标记筛选");
+        String where = " WHERE " + restriction(kind);
+        var params = new ArrayList<Object>();
+        if (spaceId != null) {
+            where += " AND space_id=?";
+            params.add(spaceId);
+        }
+        if (valid != null) {
+            where += " AND " + validityColumn(kind) + "=?";
+            params.add(valid);
+        }
+        long total = Objects.requireNonNull(jdbc.queryForObject(
+            "SELECT COUNT(*) FROM hardware_record" + where, Long.class, params.toArray()));
+        params.add(pageSize);
+        params.add((long) (page - 1) * pageSize);
+        var rows = jdbc.query("SELECT * FROM hardware_record" + where + " ORDER BY id DESC LIMIT ? OFFSET ?", (rs, index) -> {
+            var row = new LinkedHashMap<String, Object>();
+            row.put("id", rs.getLong("id"));
+            row.put("spaceId", rs.getLong("space_id"));
+            row.put("deviceId", rs.getString("device_id"));
+            row.put("sampledAt", rs.getObject("sampled_at", LocalDateTime.class).toInstant(ZoneOffset.UTC));
+            row.put("receivedAt", rs.getObject("received_at", LocalDateTime.class).toInstant(ZoneOffset.UTC));
             if (kind == Kind.VISIT) {
-                row.put("virtualPersonId",rs.getString("virtual_person_id"));
-                // DATETIME 存的是 UTC 墙上时间；getTimestamp 会被 MySQL 连接时区转换。
-                row.put("checkedInAt",rs.getObject("checked_in_at",java.time.LocalDateTime.class).toInstant(java.time.ZoneOffset.UTC));
-                var ended = rs.getObject("checked_out_at",java.time.LocalDateTime.class);
-                row.put("checkedOutAt",ended == null ? null : ended.toInstant(java.time.ZoneOffset.UTC));
+                row.put("eventId", rs.getString("event_id"));
+                row.put("eventType", rs.getString("event_type"));
+                row.put("headcount", rs.getLong("headcount"));
             } else {
-                row.put("sampledAt",rs.getObject("sampled_at",java.time.LocalDateTime.class).toInstant(java.time.ZoneOffset.UTC));
-                row.put("valid",rs.getBoolean("valid")); row.put("invalidReason",rs.getString("invalid_reason"));
-                if (kind == Kind.PEOPLE) row.put("currentPeople",rs.getInt("current_people"));
-                else { row.put("noiseDb",rs.getDouble("noise_db")); row.put("deviceId",rs.getLong("device_id")); }
+                row.put("valid", rs.getBoolean(validityColumn(kind)));
+                row.put("invalidReason", rs.getString(kind == Kind.NOISE ? "noise_invalid_reason" : "people_invalid_reason"));
+                if (kind == Kind.PEOPLE) row.put("currentPeople", rs.getLong("headcount"));
+                else {
+                    row.put("noiseDb", rs.getObject("decibel"));
+                    row.put("soundValid", rs.getObject("sound_valid"));
+                }
             }
             return row;
-        },queryParams.toArray());
-        return Map.of("items",rows,"total",Objects.requireNonNull(total),"page",page,"pageSize",pageSize,
-            "calculatedAt",clock.instant(),"simulationRunId",run,"warnings",List.of());
+        }, params.toArray());
+        return Map.of("items", rows, "total", total, "page", page, "pageSize", pageSize,
+            "calculatedAt", clock.instant(), "warnings", List.of());
     }
-    public List<Map<String,Object>> devices() {
-        return jdbc.query("SELECT d.*,s.name,s.enabled FROM noise_device d JOIN study_space s ON s.id=d.space_id ORDER BY d.space_id", (rs,index) ->
-            Map.of("id",rs.getLong("id"),"spaceId",rs.getLong("space_id"),"spaceName",rs.getString("name"),
-                "enabled",rs.getBoolean("enabled"),"deviceCode",rs.getString("device_code"),"status",rs.getString("status"),
-                "baseDb",rs.getDouble("base_db"),"fluctuationDb",rs.getDouble("fluctuation_db")));
+
+    public List<Map<String, Object>> devices() {
+        var now = clock.instant();
+        int validity = configs.current().validitySeconds();
+        return jdbc.query("SELECT d.*,s.name AS space_name,(SELECT MAX(r.received_at) FROM hardware_record r WHERE r.device_id=d.device_id) AS last_received_at FROM hardware_device d LEFT JOIN study_space s ON s.id=d.space_id ORDER BY d.id", (rs, index) -> {
+            var row = new LinkedHashMap<String, Object>();
+            var received = rs.getObject("last_received_at", LocalDateTime.class);
+            var last = received == null ? null : received.toInstant(ZoneOffset.UTC);
+            row.put("id", rs.getLong("id"));
+            row.put("spaceId", rs.getObject("space_id"));
+            row.put("spaceName", rs.getString("space_name"));
+            row.put("deviceId", rs.getString("device_id"));
+            row.put("deviceCode", rs.getString("device_id"));
+            row.put("name", rs.getString("name"));
+            row.put("enabled", rs.getBoolean("enabled"));
+            row.put("status", rs.getBoolean("enabled") && "VALID".equals(StatusService.state(last, now, validity)) ? "ONLINE" : "OFFLINE");
+            row.put("lastReceivedAt", last);
+            return row;
+        });
     }
+
     @Transactional public void validity(Kind kind, long id, boolean valid, String reason, String actor) {
-        if (kind == Kind.VISIT) throw new BusinessException(400,"INVALID_KIND","到访事件不能标记无效，请检查人数快照");
+        if (kind == Kind.VISIT)
+            throw new BusinessException(400, "INVALID_KIND", "设备事件为只读事实，请检查对应人数记录");
         if (reason == null || reason.isBlank() || reason.trim().length() > 500)
-            throw new BusinessException(400,"REASON_REQUIRED","标记和恢复均须填写1至500字原因");
-        // 与重置共用空间锁，先锁后读；禁止旧页面修改已清除或非本轮记录。
+            throw new BusinessException(400, "REASON_REQUIRED", "标记和恢复均须填写1至500字原因");
         spaces.lockAll();
-        var rows = jdbc.queryForList("SELECT run_id FROM " + table(kind) + " WHERE id=? FOR UPDATE",id);
-        if (rows.isEmpty()) throw new BusinessException(404,"RECORD_NOT_FOUND","记录不存在，可能已被模拟重置清除");
-        if (((Number)rows.getFirst().get("run_id")).longValue() != simulation.runId())
-            throw new BusinessException(409,"OLD_SIMULATION_RUN","只能修改当前模拟运行的记录，请刷新页面");
-        jdbc.update("UPDATE " + table(kind) + " SET valid=?,invalid_reason=? WHERE id=?",valid,valid ? null : reason.trim(),id);
-        audit.record(actor,valid ? "RECORD_RESTORE" : "RECORD_INVALIDATE",kind + ":" + id,reason.trim());
+        var rows = jdbc.queryForList("SELECT id FROM hardware_record WHERE id=? AND " + restriction(kind) + " FOR UPDATE", id);
+        if (rows.isEmpty()) throw new BusinessException(404, "RECORD_NOT_FOUND", "硬件记录不存在");
+        String column = validityColumn(kind);
+        String reasonColumn = kind == Kind.NOISE ? "noise_invalid_reason" : "people_invalid_reason";
+        jdbc.update("UPDATE hardware_record SET " + column + "=?," + reasonColumn + "=? WHERE id=?", valid, valid ? null : reason.trim(), id);
+        audit.record(actor, valid ? "RECORD_RESTORE" : "RECORD_INVALIDATE", kind + ":" + id, reason.trim());
     }
 }

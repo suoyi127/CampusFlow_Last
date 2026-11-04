@@ -13,7 +13,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
-@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test") @Transactional
+// 未配置地图的场景必须独立于开发机上的真实密钥。
+@SpringBootTest(properties={"CF_AMAP_JS_KEY=", "CF_AMAP_SECURITY_JS_CODE="})
+@AutoConfigureMockMvc @ActiveProfiles("test") @Transactional
 class AmapIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
@@ -32,9 +34,9 @@ class AmapIntegrationTest {
     @Test void unknownCoordinatesAreExcludedFromRecommendations() throws Exception {
         jdbc.update("UPDATE study_space SET coordinate_system='UNKNOWN' WHERE id=6");
         var user=login("student");
-        mvc.perform(get("/api/spaces/6").session(user)).andExpect(status().isConflict())
+        mvc.perform(get("/api/spaces/6").param("latitude","31.2304").param("longitude","121.4737").session(user)).andExpect(status().isConflict())
             .andExpect(jsonPath("code").value("COORDINATES_UNCONFIRMED"));
-        mvc.perform(get("/api/spaces").param("openOnly","false").session(user)).andExpect(status().isOk())
+        mvc.perform(get("/api/spaces").param("latitude","31.2304").param("longitude","121.4737").param("openOnly","false").session(user)).andExpect(status().isOk())
             .andExpect(jsonPath("total").value(9));
     }
     @Test void migrationRecognizesTenSyntheticDemoCoordinates() {
@@ -79,6 +81,6 @@ class AmapIntegrationTest {
         body.put("coordinateSystem","GCJ02");
         mvc.perform(put("/api/data/spaces/6").session(admin).with(csrf()).contentType("application/json")
             .content(body.toString())).andExpect(status().isOk()).andExpect(jsonPath("coordinateSystem").value("GCJ02"));
-        mvc.perform(get("/api/spaces/6").session(login("student"))).andExpect(status().isOk());
+        mvc.perform(get("/api/spaces/6").param("latitude","31.2304").param("longitude","121.4737").session(login("student"))).andExpect(status().isOk());
     }
 }

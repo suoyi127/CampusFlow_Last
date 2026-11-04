@@ -54,7 +54,7 @@ class ReviewIntegrationTest {
         mvc.perform(get("/api/spaces/6/reviews").session(user)).andExpect(jsonPath("summary.count").value(1))
             .andExpect(jsonPath("summary.environmentAverage").value(5.0)).andExpect(jsonPath("summary.facilityAverage").value(3.0))
             .andExpect(jsonPath("items[0].reviewReason").doesNotExist()).andExpect(jsonPath("items[0].reviewedBy").doesNotExist());
-        mvc.perform(get("/api/spaces/6").session(user)).andExpect(jsonPath("reviewSummary.count").value(1));
+        mvc.perform(get("/api/spaces/6").param("latitude","31.2304").param("longitude","121.4737").session(user)).andExpect(jsonPath("reviewSummary.count").value(1));
         review=submit(user,4,4,review.get("version").asLong());
         mvc.perform(get("/api/spaces/6/reviews").session(user)).andExpect(jsonPath("summary.count").value(0));
         review=decision(admin,review,"REJECT","说明不够具体");
