@@ -3,7 +3,7 @@ spring:
     name: campusflow
   datasource:
     url: ${CF_DB_URL:jdbc:mysql://localhost:3306/campusflow?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
-    username: ${CF_DB_USER:campusflow}
+    username: ${CF_DB_USER:campusflow_app}
     password: ${CF_DB_PASSWORD:}
   jackson:
     time-zone: Asia/Shanghai
@@ -11,6 +11,7 @@ spring:
       accept-float-as-int: false
   flyway:
     enabled: true
+    locations: classpath:db/real-migration
 server:
   port: ${CF_PORT:8080}
   servlet:
@@ -23,14 +24,12 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 campusflow:
-  demo-enabled: ${CF_DEMO_ENABLED:false}
-  simulation-enabled: true
   checkin:
     # 兼容旧配置，仅首次导入数据库；日常绑定由数据管理员在设备管理页面维护。
     device-bindings: ${CF_CHECKIN_DEVICE_BINDINGS:}
     http-token: ${CF_CHECKIN_HTTP_TOKEN:}
     mqtt:
-      enabled: ${CF_CHECKIN_MQTT_ENABLED:false}
+      enabled: ${CF_CHECKIN_MQTT_ENABLED:true}
       uri: ${CF_CHECKIN_MQTT_URI:tcp://localhost:1883}
       client-id: ${CF_CHECKIN_MQTT_CLIENT_ID:campusflow-checkin-receiver}
       username: ${CF_CHECKIN_MQTT_USERNAME:}

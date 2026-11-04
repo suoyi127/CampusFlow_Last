@@ -26,7 +26,7 @@ public class HardwareDeviceService {
   });
  }
  @Transactional public List<Map<String,Object>> save(Long id,HardwareDeviceInput input,String actor){
-  // 与模拟、空间维护和接收采用同一顺序锁空间，避免绑定变更与上报交错。
+  // 与空间维护和接收采用同一顺序锁空间，避免绑定变更与上报交错。
   var all=spaces.lockAll();
   if(input.spaceId()!=null && all.stream().noneMatch(s->Objects.equals(s.id,input.spaceId()))) throw new BusinessException(404,"SPACE_NOT_FOUND","学习空间不存在");
   if(id!=null){

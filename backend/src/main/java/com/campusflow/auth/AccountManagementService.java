@@ -21,12 +21,12 @@ public class AccountManagementService {
     }
     public AccountView get(long id) {
         var account=accounts.selectById(id);
-        if(account==null)throw new BusinessException(404,"ACCOUNT_NOT_FOUND","账号不存在");
+        if(account==null || "LEGACY_SAMPLE".equals(account.dataOrigin))throw new BusinessException(404,"ACCOUNT_NOT_FOUND","账号不存在");
         return AccountView.of(account);
     }
     @Transactional(readOnly=true,isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     public Map<String,Object> list(AccountQuery query) {
-        var where=new QueryWrapper<Account>();
+        var where=new QueryWrapper<Account>().eq("data_origin", "REAL");
         if(query.username()!=null&&!query.username().isBlank()) where.like("username",query.username().trim());
         if(query.role()!=null)where.eq("role",query.role()); if(query.enabled()!=null)where.eq("enabled",query.enabled());
         long total=accounts.selectCount(where);
@@ -63,7 +63,7 @@ public class AccountManagementService {
     @Transactional public AccountView update(String actor,long id,AccountUpdate input) {
         lockManagement(actor);
         var account=accounts.lock(id);
-        if(account==null)throw new BusinessException(404,"ACCOUNT_NOT_FOUND","账号不存在");
+        if(account==null || "LEGACY_SAMPLE".equals(account.dataOrigin))throw new BusinessException(404,"ACCOUNT_NOT_FOUND","账号不存在");
         if(!account.version.equals(input.expectedVersion()))throw new BusinessException(409,"VERSION_CONFLICT","账号已发生变化，请重新加载");
         if(account.role.equals(input.role())&&account.enabled.equals(input.enabled()))return AccountView.of(account);
         if(account.enabled&&account.role.equals("SERVER_ADMIN")&&(!input.enabled()||!input.role().equals("SERVER_ADMIN"))) {

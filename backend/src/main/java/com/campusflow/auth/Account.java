@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public class Account {
     @TableId(type = IdType.AUTO) public Long id;
     public String username;
+    @JsonIgnore public String dataOrigin;
     @JsonIgnore public String passwordHash;
     public String role;
     public Boolean enabled;

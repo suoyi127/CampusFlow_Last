@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.*;
 public class StudySpace {
     @TableId(type = IdType.AUTO) public Long id;
     public String name;
+    public String dataOrigin;
     public String type;
     public String address;
     public Double latitude;

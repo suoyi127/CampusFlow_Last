@@ -1,4 +1,6 @@
 spring:
+  flyway:
+    locations: classpath:db/migration
   datasource:
     url: jdbc:h2:mem:campusflow;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
     username: sa
@@ -6,6 +8,9 @@ spring:
 campusflow:
   demo-enabled: true
   simulation-enabled: false
+  checkin:
+    mqtt:
+      enabled: false
 debug: false
 logging:
   level:
