@@ -50,7 +50,7 @@ onMounted(load)
   <div class="page-heading"><div><div class="eyebrow">数据管理员 / SPACES</div><h1>空间管理</h1><p class="muted">维护基础资料、设施与营业时间，停用后保留历史记录。</p></div><el-button type="primary" @click="edit()">新增空间</el-button></div>
   <el-alert v-if="error && !opened" :title="error" type="error" :closable="false"><el-button text @click="load">重试</el-button></el-alert>
   <div class="panel table-panel"><el-table :data="spaces" stripe><el-table-column prop="id" label="编号" width="70" /><el-table-column prop="name" label="名称" min-width="190" /><el-table-column label="类型" width="100"><template #default="scope">{{ typeNames[scope.row.type] }}</template></el-table-column><el-table-column label="位置" width="120"><template #default="scope"><el-tag :type="scope.row.coordinateSystem === 'GCJ02' ? 'success' : 'warning'">{{ scope.row.coordinateSystem === 'GCJ02' ? 'GCJ-02' : '待确认位置' }}</el-tag></template></el-table-column><el-table-column prop="capacity" label="容量" width="80" /><el-table-column label="状态" width="100"><template #default="scope"><el-tag :type="scope.row.enabled ? 'success' : 'info'">{{ scope.row.enabled ? '启用' : '停用' }}</el-tag></template></el-table-column><el-table-column label="操作" width="100"><template #default="scope"><el-button text type="primary" @click="edit(scope.row)">编辑</el-button></template></el-table-column></el-table></div>
-  <el-dialog v-model="opened" :title="editing === null ? '新增空间' : '编辑空间'" width="min(640px, 94vw)">
+  <el-dialog class="cf-dialog" append-to-body v-model="opened" :title="editing === null ? '新增空间' : '编辑空间'" width="min(640px, 94vw)">
     <form class="edit-form" @submit.prevent="save">
       <el-alert v-if="error" :title="error" type="error" :closable="false" />
       <label>名称<el-input v-model="form.name" maxlength="100" /></label><label>地址<el-input v-model="form.address" maxlength="200" /></label>
@@ -68,5 +68,5 @@ onMounted(load)
       <el-button native-type="submit" type="primary" :loading="saving">保存</el-button>
     </form>
   </el-dialog>
-  <el-dialog v-model="locationOpened" title="确定学习空间位置" width="min(860px, 96vw)"><LocationPicker v-if="locationOpened" :initial="initialLocation" :allow-locate="true" @confirm="confirmLocation" @cancel="locationOpened = false" /></el-dialog>
+  <el-dialog class="cf-dialog cf-dialog--map" append-to-body v-model="locationOpened" title="确定学习空间位置" width="min(860px, 96vw)"><LocationPicker v-if="locationOpened" :initial="initialLocation" :allow-locate="true" @confirm="confirmLocation" @cancel="locationOpened = false" /></el-dialog>
 </template>

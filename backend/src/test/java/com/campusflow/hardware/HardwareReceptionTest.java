@@ -43,6 +43,29 @@ class HardwareReceptionTest {
     @Autowired HardwareDiscovery discovery;
     @Autowired com.campusflow.status.InspectionService inspection;
     long now(){return clock.instant().getEpochSecond();}
+    @Autowired com.campusflow.space.SpaceService spaceService;
+    private void saveSpace(int capacity,boolean enabled) {
+        var s=spaces.selectById(6);
+        spaceService.save(6L,new com.campusflow.space.SpaceInput(s.name,s.type,s.address,s.latitude,s.longitude,capacity,s.openTime,s.closeTime,
+            java.util.Arrays.stream(s.openDays.split(",")).map(Integer::valueOf).toList(),s.allDay,
+            java.util.Arrays.asList(s.facilities.split(",")),s.description,enabled,"GCJ02"),"data_admin");
+    }
+    @Test void invalidHardwareAllowsManagementButNotCapacityReduction() {
+        service.telemetry(new Telemetry("AREA_A_001",now(),4294967295L,null,false));
+        assertDoesNotThrow(()->saveSpace(16,false));
+        assertDoesNotThrow(()->saveSpace(20,true));
+        assertEquals("PEOPLE_UNCONFIRMED",assertThrows(BusinessException.class,()->saveSpace(19,true)).code);
+        assertEquals(4294967295L,service.currentPeople(6));
+    }
+    @Test void capacityReductionRequiresFreshValidHardwareCount() {
+        assertEquals("PEOPLE_UNCONFIRMED",assertThrows(BusinessException.class,()->saveSpace(15,true)).code);
+        service.telemetry(new Telemetry("AREA_A_001",now(),10L,null,false));
+        assertEquals("CAPACITY_TOO_SMALL",assertThrows(BusinessException.class,()->saveSpace(9,true)).code);
+        assertDoesNotThrow(()->saveSpace(10,true));
+        clock.now=clock.now.plusSeconds(31);
+        assertEquals("PEOPLE_UNCONFIRMED",assertThrows(BusinessException.class,()->saveSpace(9,true)).code);
+        assertDoesNotThrow(()->saveSpace(10,false));
+    }
     Event event(String id,EventType type,long count,long at){return new Event("AREA_A_001",id,at,type,count);}
     @BeforeEach void prepare(){
         clock.now=Instant.parse("2026-10-09T02:00:00Z");

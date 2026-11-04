@@ -1,6 +1,6 @@
 # 高德地图与选点
 
-按用户已确认方案实施。高德 JS API 2.0 按需加载，安全密钥仅服务端配置，serviceHost 使用同源 /api/amap/_AMapService，白名单代理固定高德上游。无配置时不请求 SDK，显示明确提示并保留原列表/手动坐标输入。
+按用户已确认方案实施。高德 JS API 2.0 按需加载，安全密钥仅服务端配置，serviceHost 使用同源 /_AMapService，白名单代理固定高德上游。无配置时不请求 SDK，显示明确提示并保留原列表/手动坐标输入。
 
 新增 MapLocation 类型 {longitude,latitude,address?,accuracy?,coordinateSystem:'GCJ02'}。管理员与用户共用 LocationPicker，点击/拖动标记/搜索/主动定位形成临时选点，显式确认才向父组件提交；取消不改表单。定位使用高德 Geolocation convert:true；原生 GPS 不直接用于距离查询。精度圈由返回 accuracy 展示，过粗定位需用户确认。异步搜索/地址回查/定位均防旧响应覆盖新操作，地图卸载销毁。
 

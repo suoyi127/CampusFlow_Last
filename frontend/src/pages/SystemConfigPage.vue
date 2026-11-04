@@ -42,8 +42,33 @@ async function save() {
   <el-alert v-if="error" :title="error" type="error" :closable="false"><el-button text @click="refresh">重试</el-button></el-alert>
   <el-alert v-if="saveError" :title="saveError" type="error" :closable="false" />
   <el-alert v-if="notice" :title="notice" type="success" :closable="false" />
-  <form v-if="baseline" class="panel review-editor" @submit.prevent="save"><p class="muted">编辑版本 {{ baseline.version }} · 当前服务器版本 {{ current?.version }}</p><el-alert v-if="current && current.version > baseline.version" title="服务器配置已更新。你的输入仍保留，请重新加载后再保存。" type="warning" :closable="false" />
-    <h2>模拟与状态</h2><label>模拟采样周期（2—60 秒）<el-input-number v-model="form.simulationSeconds" :min="2" :max="60" :precision="0" :disabled="busy" /></label><label>状态有效期（5—300 秒）<el-input-number v-model="form.validitySeconds" :min="5" :max="300" :precision="0" :disabled="busy" /></label><label>噪声统计窗口（5—600 秒）<el-input-number v-model="form.noiseWindowSeconds" :min="5" :max="600" :precision="0" :disabled="busy" /></label><p class="muted">有效期至少为采样周期的两倍，噪声统计窗口至少为有效期。</p>
-    <h2>推荐权重</h2><label v-for="field in fields" :key="field.key">{{ field.name }}<el-input-number v-model="form[field.key]" :min="0" :max="1" :step=".05" :precision="4" :disabled="busy" /></label><p>权重之和：{{ sum.toFixed(4) }}（应为 1）</p><div><el-button native-type="submit" type="primary" :loading="busy" :disabled="conflict || !!(current && current.version > baseline.version)">保存配置</el-button><el-button :disabled="busy" @click="reload">重新加载（替换输入）</el-button></div>
+  <form v-if="baseline" class="panel review-editor runtime-config" @submit.prevent="save"><p class="muted">编辑版本 {{ baseline.version }} · 当前服务器版本 {{ current?.version }}</p><el-alert v-if="current && current.version > baseline.version" title="服务器配置已更新。你的输入仍保留，请重新加载后再保存。" type="warning" :closable="false" />
+    <div class="config-sections"><section class="config-section" aria-labelledby="simulation-heading"><h2 id="simulation-heading">模拟与状态</h2><div class="config-fields config-fields--timing"><label>模拟采样周期（2—60 秒）<el-input-number v-model="form.simulationSeconds" :min="2" :max="60" :precision="0" :disabled="busy" /></label><label>状态有效期（5—300 秒）<el-input-number v-model="form.validitySeconds" :min="5" :max="300" :precision="0" :disabled="busy" /></label><label>噪声统计窗口（5—600 秒）<el-input-number v-model="form.noiseWindowSeconds" :min="5" :max="600" :precision="0" :disabled="busy" /></label></div><p class="muted config-hint">有效期至少为采样周期的两倍，噪声统计窗口至少为有效期。</p></section>
+    <section class="config-section" aria-labelledby="weights-heading"><h2 id="weights-heading">推荐权重</h2><div class="config-fields config-fields--weights"><label v-for="field in fields" :key="field.key">{{ field.name }}<el-input-number v-model="form[field.key]" :min="0" :max="1" :step=".05" :precision="4" :disabled="busy" /></label></div><p class="config-hint">权重之和：{{ sum.toFixed(4) }}（应为 1）</p></section></div><div class="review-actions config-actions"><el-button native-type="submit" type="primary" :loading="busy" :disabled="conflict || !!(current && current.version > baseline.version)">保存配置</el-button><el-button :disabled="busy" @click="reload">重新加载（替换输入）</el-button></div>
   </form>
 </template>
+
+<style scoped>
+.runtime-config > p { margin: 0; }
+.config-sections { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+.config-section { min-width: 0; padding: 20px; background: #f7faf9; border: 1px solid #e4ecea; border-radius: 10px; }
+.config-section h2 { margin-bottom: 18px; }
+.config-fields { display: grid; gap: 16px; }
+.config-fields--timing { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.config-fields--weights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.config-fields label { min-width: 0; line-height: 1.6; }
+.config-fields :deep(.el-input-number) { width: 100%; }
+.config-hint { margin: 18px 0 0; font-size: 13px; line-height: 1.7; }
+.config-actions { border-top: 1px solid #e4ecea; padding-top: 18px; }
+@media (max-width: 1250px) {
+  .config-sections { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .config-fields--weights { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .config-section { padding: 14px; }
+  .config-fields--timing, .config-fields--weights { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}
+@media (max-width: 380px) {
+  .config-fields--timing, .config-fields--weights { grid-template-columns: minmax(0, 1fr); }
+}
+</style>

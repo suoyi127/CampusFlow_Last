@@ -15,3 +15,198 @@
 .map-origin-marker,.map-space-marker{display:grid;place-items:center;background:#137d72;color:#fff;min-width:30px;height:30px;padding:0 8px;border:2px solid white;border-radius:50%;box-shadow:0 2px 8px #24353d40;font-size:13px;font-weight:600;white-space:nowrap}.map-origin-marker{background:#ae663d;border-radius:8px;font-size:12px}
 .map-space-summary{margin-top:18px;padding-top:18px;border-top:1px solid #e4ecea}.map-space-summary p{overflow-wrap:anywhere}.location-picker details{margin:16px 0}.location-picker summary{cursor:pointer;color:#52646b;margin-bottom:12px}.location-picker .review-actions{margin-top:20px}
 @media(max-width:640px){.amap-canvas{height:320px}.space-map{padding:16px}.map-search .el-input{flex-basis:100%}.map-search .el-button{flex:1}.map-space-summary h2{font-size:19px}}
+
+/* 网格子项允许收缩，长地址和表格在自身容器内换行或滚动。 */
+main, .search-layout > *, .login-layout > *, .overview-grid > * { min-width: 0; }
+.search-layout { grid-template-columns: 280px minmax(0, 1fr); }
+.login-layout { grid-template-columns: minmax(0, 1fr) minmax(300px, 400px); gap: clamp(24px, 5vw, 80px); padding: clamp(16px, 3vw, 50px); }
+.page-heading > *, .card-heading > *, .card-bottom > *, .detail-panel dd { min-width: 0; overflow-wrap: anywhere; }
+.topbar nav { flex: 1 1 360px; min-width: 0; }
+.account { flex-shrink: 0; }
+.form-row { align-items: end; }
+.form-row > label { min-width: min(100%, 160px); }
+.edit-form .el-select, .review-editor .el-select { width: 100%; }
+.el-checkbox-group { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.el-checkbox-group .el-checkbox { margin-right: 0; max-width: 100%; }
+.el-pagination { flex-wrap: wrap; gap: 8px; }
+
+/* 标题固定在浮窗顶部，长表单只滚动内容；dvh 随移动浏览器可视高度变化。 */
+.el-dialog.cf-dialog {
+  --el-dialog-padding-primary: 24px;
+  width: min(var(--el-dialog-width, 640px), calc(100% - 48px));
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
+  margin: 24px auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.cf-dialog .el-dialog__header { flex: none; margin: 0; padding-bottom: 18px; padding-right: 36px; border-bottom: 1px solid #edf1ef; }
+.cf-dialog .el-dialog__title { display: block; line-height: 1.5; overflow-wrap: anywhere; }
+.cf-dialog .el-dialog__headerbtn { width: 44px; height: 44px; top: 12px; right: 12px; }
+.cf-dialog .el-dialog__body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-top: 20px; scrollbar-gutter: stable; overflow-wrap: anywhere; }
+.cf-dialog .el-dialog__footer { flex: none; padding-top: 16px; }
+.cf-dialog .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 16px; }
+.cf-dialog .form-row > * { min-width: 0; }
+.cf-dialog .el-input-number, .cf-dialog .el-select { width: 100%; }
+.cf-dialog .review-actions .el-button { margin-left: 0; }
+.cf-dialog .amap-canvas { height: clamp(220px, 42vh, 400px); height: clamp(220px, 42dvh, 400px); min-height: 180px; }
+.el-message-box { max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; }
+.el-message { max-width: calc(100vw - 24px); }
+.el-message__content { overflow-wrap: anywhere; }
+
+@media (max-width: 1024px) {
+  .topbar { column-gap: 24px; padding-inline: 24px; }
+  .topbar nav { order: 3; flex-basis: 100%; }
+  .account { margin-left: auto; }
+  .search-layout { grid-template-columns: 240px minmax(0, 1fr); gap: 20px; }
+  .login-layout { gap: 28px; }
+}
+@media (max-width: 800px) {
+  .search-layout { grid-template-columns: minmax(0, 1fr); }
+  .filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filters h3, .filters > small, .filters > .location-controls, .filters > .el-button { grid-column: 1 / -1; }
+  .login-layout { grid-template-columns: minmax(0, 1fr); max-width: 520px; margin-inline: auto; }
+  .login-copy h1 { font-size: 32px; }
+  .login-copy p, .login-feature { display: none; }
+}
+@media (max-width: 640px) {
+  main { padding: 24px 12px 40px; }
+  .topbar { padding: 14px 12px; gap: 14px; }
+  .topbar nav { flex-wrap: nowrap; overflow-x: auto; gap: 20px; padding-bottom: 8px; }
+  .topbar nav a { flex-shrink: 0; padding-block: 6px; }
+  .account span { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .panel { padding: 18px; }
+  .table-panel { padding: 8px; }
+  .login-layout { padding: 8px 0; }
+  .login-form { padding: 24px; }
+  .filters, .moderation-filters { gap: 14px; }
+  .filters > label, .moderation-filters > label { min-width: 0; }
+  .moderation-filters > label { flex-basis: calc(50% - 14px); }
+  .results-toolbar { flex-wrap: wrap; }
+  .card-bottom { flex-wrap: wrap; }
+  .detail-panel dl { grid-template-columns: 88px minmax(0, 1fr); gap: 14px; }
+  .el-dialog.cf-dialog {
+    --el-dialog-padding-primary: 16px;
+    width: calc(100% - 16px);
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    margin: 8px auto;
+    border-radius: 12px;
+  }
+  .cf-dialog .el-dialog__headerbtn { top: 4px; right: 4px; }
+  .cf-dialog .el-dialog__body { padding-top: 16px; scrollbar-gutter: auto; }
+  .cf-dialog .el-input__inner { font-size: 16px; }
+  .cf-dialog .el-button, .review-actions .el-button { min-height: 40px; }
+  .cf-dialog .review-actions { gap: 10px; }
+  .cf-dialog .review-actions .el-button { flex: 1; }
+  .cf-dialog .amap-canvas { height: 32vh; height: 32dvh; }
+}
+@media (max-width: 380px) {
+  .filters { grid-template-columns: minmax(0, 1fr); }
+  .moderation-filters > label { flex-basis: 100%; }
+  .cf-dialog .form-row { grid-template-columns: minmax(0, 1fr); }
+  .brand { gap: 8px; font-size: 16px; }
+  .brand-mark { width: 34px; height: 34px; }
+  .account span { max-width: 88px; }
+}
+
+/* 桌面侧栏独立滚动，正文使用剩余宽度；窄屏菜单覆盖正文而不挤压表格。 */
+.app-shell { --sidebar-width: 208px; --header-height: 64px; min-height: 100dvh; }
+.app-shell .topbar { position: sticky; top: 0; z-index: 30; min-height: var(--header-height); height: var(--header-height); flex-wrap: nowrap; padding: 10px 20px; gap: 16px; }
+.app-shell .brand { font-size: 18px; gap: 10px; }
+.app-shell .brand-mark { width: 36px; height: 36px; border-radius: 9px; }
+.app-shell .account { margin-left: auto; }
+.sidebar { position: fixed; inset: var(--header-height) auto 0 0; width: var(--sidebar-width); background: #fff; border-right: 1px solid #e4ecea; padding: 18px 12px; overflow-y: auto; z-index: 25; }
+.sidebar-label { color: #84928f; font-size: 11px; padding: 0 12px 12px; letter-spacing: 2px; }
+.sidebar nav { display: flex; flex-direction: column; gap: 5px; }
+.sidebar nav a { padding: 11px 14px; border-radius: 8px; font-size: 14px; color: #52646b; }
+.sidebar nav a:hover { background: #f2f7f5; }
+.sidebar nav a.router-link-exact-active { background: #e5f3ee; color: #137d72; font-weight: 600; box-shadow: inset 3px 0 #137d72; }
+.sidebar nav a:focus-visible, .navigation-toggle:focus-visible { outline: 2px solid #137d72; outline-offset: 2px; }
+.app-shell main { max-width: none; margin: 0; padding: 22px 24px 24px; min-height: calc(100dvh - 106px); }
+.app-shell.has-sidebar main, .app-shell.has-sidebar footer { margin-left: var(--sidebar-width); }
+.app-shell footer { padding: 12px 20px; }
+.navigation-toggle, .sidebar-backdrop { display: none; }
+.app-shell h1 { font-size: 27px; margin-bottom: 6px; }
+.app-shell .eyebrow { margin-bottom: 6px; }
+.app-shell .page-heading { margin-bottom: 18px; gap: 14px; }
+.app-shell .panel { padding: 18px; border-radius: 10px; }
+.app-shell .table-panel { padding: 8px; }
+.app-shell .search-layout { grid-template-columns: 240px minmax(0, 1fr); gap: 18px; }
+.app-shell .filters { gap: 12px; }
+.app-shell .results { gap: 12px; }
+.app-shell .results > p { margin: 0; }
+.app-shell .space-card { padding: 18px 20px; }
+.app-shell .card-heading p { margin-bottom: 0; }
+.app-shell .metrics { margin-top: 12px; padding: 12px 0; gap: 14px; }
+.app-shell .metrics div { gap: 5px; }
+.app-shell .review-summary { margin: 10px 0; }
+.app-shell .card-bottom, .app-shell .card-reason { margin-top: 12px; }
+.app-shell .detail-panel { margin: 14px 0; }
+.app-shell .overview-grid { gap: 14px; }
+.app-shell .overview-grid .panel { gap: 10px; }
+.app-shell .moderation-filters { margin-bottom: 14px; gap: 12px; }
+.app-shell .edit-form { gap: 14px; }
+.app-shell .back-link { margin-bottom: 12px; }
+.app-shell:not(.has-sidebar) main { max-width: 1100px; margin: auto; }
+@media (max-width: 1100px) {
+  .app-shell { --sidebar-width: 184px; }
+  .app-shell main { padding: 18px; }
+  .app-shell .search-layout { grid-template-columns: minmax(0, 1fr); }
+  .app-shell .filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app-shell .filters h3, .app-shell .filters > small, .app-shell .filters > .location-controls, .app-shell .filters > .el-button { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .app-shell .topbar { padding: 8px 12px; gap: 10px; }
+  .app-shell .brand small { display: none; }
+  .app-shell .brand-mark { width: 30px; height: 30px; }
+  .app-shell .brand { font-size: 16px; }
+  .navigation-toggle { display: block; border: 1px solid #dce6e2; background: white; color: #137d72; border-radius: 7px; padding: 8px 10px; flex-shrink: 0; cursor: pointer; }
+  .sidebar { width: min(260px, 82vw); transform: translateX(-100%); visibility: hidden; }
+  .navigation-open .sidebar { transform: translateX(0); visibility: visible; }
+  .sidebar-backdrop { display: block; position: fixed; inset: var(--header-height) 0 0; z-index: 24; border: 0; background: #182d3855; }
+  .app-shell.has-sidebar main, .app-shell.has-sidebar footer { margin-left: 0; }
+  .app-shell main { padding: 16px 12px; }
+  .app-shell h1 { font-size: 23px; }
+  .app-shell .panel { padding: 14px; }
+  .app-shell .table-panel { padding: 6px; }
+  .app-shell .page-heading { gap: 10px; margin-bottom: 14px; }
+  .app-shell .account { gap: 0; }
+  .app-shell .account span { max-width: 86px; font-size: 10px; }
+}
+@media (max-width: 420px) {
+  .app-shell .brand > span:last-child { display: none; }
+  .app-shell .filters { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 使用低对比度细滚动条，悬停加深以保留可发现性；高对比度模式交还系统绘制。 */
+@media (forced-colors: none) {
+  * { scrollbar-width: thin; scrollbar-color: #bccbc6 transparent; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: #bccbc6; border-radius: 999px; }
+  *::-webkit-scrollbar-thumb:hover { background: #8daba0; }
+  *::-webkit-scrollbar-corner { background: transparent; }
+}
+
+/* 页面标题与操作区停靠在全局导航下方，背景遮挡滚过的正文。 */
+.app-shell.has-sidebar main .page-heading {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 20;
+  background: #f4f7f7;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e4ecea;
+}
+
+.app-shell .location-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.app-shell .location-controls > span { flex-basis: 100%; margin-bottom: 2px; overflow-wrap: anywhere; }
+.app-shell .location-controls > .el-button { flex: 1 1 auto; margin: 0; }
+.app-shell .location-controls > .el-button + .el-button { margin-left: 0; }
+.app-shell .filters > small { line-height: 1.6; }
+
+.app-shell .filters > .filter-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: 8px; grid-column: 1 / -1; }
+.app-shell .filter-actions > .el-button { width: 100%; min-width: 0; margin: 0; padding-inline: 6px; }

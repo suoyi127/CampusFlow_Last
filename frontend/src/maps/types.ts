@@ -21,6 +21,7 @@ export interface AMapMarker {
 }
 export interface Poi { id?: string; name: string; address?: string; location: LngLat }
 export interface AMapSdk {
+  convertFrom(position: number[], type: 'gps', callback: (status: string, result: { locations?: LngLat[] }) => void): void
   Map: new (element: HTMLElement, options: Record<string, unknown>) => AMapMap
   Marker: new (options: Record<string, unknown>) => AMapMarker
   Circle: new (options: Record<string, unknown>) => unknown

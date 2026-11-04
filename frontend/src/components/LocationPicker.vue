@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { loadAMap } from '../maps/amap'
+import { browserLocation } from '../maps/browser-location'
 import { callbackRequest, LatestSelection, validLocation } from '../maps/location'
 import type { AMapMap, AMapMarker, AMapSdk, MapLocation, Poi } from '../maps/types'
 const props = withDefaults(defineProps<{ initial?: MapLocation; allowLocate?: boolean }>(), { allowLocate: true })
@@ -66,11 +67,7 @@ async function locate() {
   if (!sdk) return
   const token = selection.begin(); locating.value = true; searching.value = false; note.value = ''
   try {
-    const position = await callbackRequest<MapLocation>((done, fail) => new sdk!.Geolocation({ enableHighAccuracy: true, timeout: 8000, convert: true, needAddress: true, showButton: false, showMarker: false, showCircle: false }).getCurrentPosition((status, result) => {
-      if (status !== 'complete' || !result.position) { fail('定位失败或权限被拒绝，可搜索地点、点击地图或使用手动坐标'); return }
-      done({ longitude: result.position.getLng(), latitude: result.position.getLat(), coordinateSystem: 'GCJ02',
-        address: result.formattedAddress, accuracy: Number.isFinite(result.accuracy) && result.accuracy! > 0 ? result.accuracy : undefined })
-    }))
+    const position = await browserLocation(sdk, () => selection.isCurrent(token))
     if (selection.isCurrent(token)) await pick(position)
   } catch (failure) { if (selection.isCurrent(token)) note.value = failure instanceof Error ? failure.message : '定位失败' }
   finally { if (selection.isCurrent(token)) locating.value = false }
@@ -84,7 +81,7 @@ onUnmounted(() => { disposed = true; selection.close(); map?.destroy(); map = un
     <p class="muted">搜索地点、点击地图或拖动标记。只有确认位置后才应用；地图拖动不会自动选择中心。</p>
     <el-alert v-if="error" :title="error" type="warning" :closable="false"><el-button text :loading="loading" @click="init">重试地图</el-button></el-alert>
     <div class="map-search"><el-input v-model="keyword" placeholder="输入学校、楼宇或地址" :disabled="!sdk" @keyup.enter="search" /><el-button :loading="searching" :disabled="!sdk" @click="search">搜索</el-button><el-button v-if="allowLocate" :disabled="!sdk" :loading="locating" @click="locate">使用当前位置</el-button></div>
-    <p v-if="allowLocate" class="muted">点击定位才申请权限。位置仅用于本次选点，不持续跟踪；手机浏览器定位通常需要 HTTPS。</p>
+    <p v-if="allowLocate" class="muted">点击后向浏览器请求位置，不使用 IP 定位回退；精度须在 100 米以内。手机需 HTTPS，失败可地图选点。位置仅用于本次选点。</p>
     <ul v-if="results.length" class="map-search-results"><li v-for="(poi,index) in results" :key="poi.id ?? index"><button type="button" @click="choose(poi)">{{ poi.name }} {{ poi.address }}</button></li></ul>
     <div ref="container" class="amap-canvas" :aria-busy="loading" aria-label="位置选择地图" />
     <p v-if="note" role="status">{{ note }}</p>

@@ -24,7 +24,7 @@ test('a delayed old-origin response is discarded and immediately queries the con
   app.component('RouterLink', pass)
   const root = document.createElement('div'); app.mount(root)
   try {
-    Array.from(root.querySelectorAll('button')).find(node => node.textContent === '定位 / 地图选点')!.click()
+    root.querySelector<HTMLButtonElement>('button[title="定位 / 地图选点"]')!.click()
     await nextTick(); Array.from(root.querySelectorAll('button')).find(node => node.textContent === '确认测试起点')!.click()
     await nextTick(); expect(mocks.api).toHaveBeenCalledTimes(1)
     resolveOld({ items: [], total: 123, warnings: [] })

@@ -9,7 +9,7 @@ export function loadAMap(): Promise<AMapSdk> {
     if (!config.configured || !config.key) throw new Error('地图未配置高德应用 Key，可继续使用列表、预置点或手动坐标。')
     return new Promise<AMapSdk>((resolve, reject) => {
     // 安全密钥只由后端代理注入，浏览器只知道同源代理地址。
-    window._AMapSecurityConfig = { serviceHost: `${window.location.origin}/api/amap/_AMapService` }
+    window._AMapSecurityConfig = { serviceHost: `${window.location.origin}/_AMapService` }
     const script = document.createElement('script')
     script.dataset.campusflowAmap = 'true'; script.async = true
     script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(config.key)}`
@@ -25,7 +25,7 @@ export function loadAMap(): Promise<AMapSdk> {
       if (settled) return
       const sdk = window.AMap
       if (!sdk) { fail(); return }
-      sdk.plugin(['AMap.PlaceSearch', 'AMap.Geocoder', 'AMap.Geolocation'], () => {
+      sdk.plugin(['AMap.PlaceSearch', 'AMap.Geocoder'], () => {
         if (settled) return
         settled = true; clearTimeout(timer); resolve(sdk)
       })

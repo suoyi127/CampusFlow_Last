@@ -29,7 +29,7 @@ public class SecurityConfig {
             .requestMatchers("/api/data/**").hasRole("DATA_ADMIN")
             .requestMatchers("/api/system/**").hasRole("SERVER_ADMIN")
             .requestMatchers("/api/user/**").hasRole("USER")
-            .requestMatchers("/api/**").authenticated()
+            .requestMatchers("/api/**", "/_AMapService/**").authenticated()
             .anyRequest().denyAll());
         http.exceptionHandling(errors -> errors
             .authenticationEntryPoint((req, res, e) -> write(res, 401, ApiError.of("UNAUTHENTICATED", "请先登录")))

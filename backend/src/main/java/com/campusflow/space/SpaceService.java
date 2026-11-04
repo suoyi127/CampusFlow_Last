@@ -46,8 +46,13 @@ public class SpaceService {
             throw new BusinessException(400,"COORDINATES_UNCONFIRMED","请确认空间位置并明确使用 GCJ02 坐标");
         if (id != null) {
             // 与硬件接收共用空间行锁，容量校验和写入期间不会新增签到。
-            long people = hardware.bound(id) ? hardware.currentPeople(id) : 0;
-            if (people > input.capacity()) throw new BusinessException(409, "CAPACITY_TOO_SMALL", "容量不能低于当前在场人数 " + people);
+            if (hardware.bound(id) && input.capacity() < space.capacity) {
+                var reading = hardware.capacityPeople(space);
+                if (!"VALID".equals(reading.state()))
+                    throw new BusinessException(409, "PEOPLE_UNCONFIRMED", "硬件人数未知、过期或无效，请纠正读数后再降低容量");
+                if (reading.count() > input.capacity())
+                    throw new BusinessException(409, "CAPACITY_TOO_SMALL", "容量不能低于当前在场人数 " + reading.count());
+            }
         }
         space.dataOrigin = "REAL";
         space.name = input.name().trim(); space.type = input.type(); space.address = input.address().trim();

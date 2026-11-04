@@ -54,7 +54,7 @@ async function save() {
     <el-table-column label="状态" width="100"><template #default="scope"><el-tag :type="scope.row.enabled ? 'success' : 'info'">{{ scope.row.enabled ? '启用' : '停用' }}</el-tag></template></el-table-column>
     <el-table-column label="操作" width="100"><template #default="scope"><el-button text type="primary" @click="edit(scope.row)">编辑</el-button></template></el-table-column>
   </el-table></div>
-  <el-dialog v-model="opened" :title="editing === null ? '录入设备' : '编辑设备'" width="min(600px, 94vw)" :close-on-click-modal="!saving" :show-close="!saving">
+  <el-dialog v-model="opened" class="cf-dialog" append-to-body :title="editing === null ? '录入设备' : '编辑设备'" width="600px" :close-on-click-modal="!saving" :show-close="!saving">
     <form class="edit-form" @submit.prevent="save">
       <el-alert v-if="saveError" :title="saveError" type="error" :closable="false" />
       <label>选择设备<el-select v-model="form.deviceId" :disabled="editing !== null" placeholder="请选择自动发现的设备" no-data-text="尚未发现设备，请确认设备正常上传及MQTT接收已开启">

@@ -91,6 +91,17 @@ public class HardwareService {
         return (value instanceof LocalDateTime local ? local : ((Timestamp)value).toLocalDateTime()).toInstant(ZoneOffset.UTC);
     }
     public boolean bound(long space) { return bindings.containsSpace(space); }
+    public record CapacityPeople(Long count,Instant sampledAt,String state) {}
+    public CapacityPeople capacityPeople(StudySpace space) {
+        var rows=jdbc.queryForList("SELECT headcount,sampled_at,people_valid FROM hardware_record WHERE space_id=? AND device_id=? ORDER BY sampled_at DESC,CASE WHEN kind='EVENT' THEN 1 ELSE 0 END DESC,event_sequence DESC,id DESC LIMIT 1",space.id,bindings.device(space.id));
+        if(rows.isEmpty()) return new CapacityPeople(null,null,"MISSING");
+        long count=((Number)rows.getFirst().get("headcount")).longValue();
+        Instant sampledAt=time(rows.getFirst().get("sampled_at"));
+        String state=StatusService.state(sampledAt,clock.instant(),configs.current().validitySeconds());
+        if(count>space.capacity || !Boolean.TRUE.equals(rows.getFirst().get("people_valid"))) state="INVALID";
+        // 原始读数保留供检查，但无效/过期人数不能冒充可用于降低容量的在场人数。
+        return new CapacityPeople(count,sampledAt,state);
+    }
     public long currentPeople(long space) {
         var counts=jdbc.queryForList("SELECT headcount FROM hardware_record WHERE space_id=? AND device_id=? ORDER BY sampled_at DESC,CASE WHEN kind='EVENT' THEN 1 ELSE 0 END DESC,event_sequence DESC,id DESC LIMIT 1",Long.class,space,bindings.device(space));
         return counts.isEmpty()?0:counts.getFirst();
