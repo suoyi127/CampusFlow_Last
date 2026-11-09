@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { account, api, ApiFailure } from './api'
 import type { Account } from './types'
+import { adminOnly, homeForRole } from './webMode'
 import LoginPage from './pages/LoginPage.vue'
 import RegisterPage from './pages/RegisterPage.vue'
 import SpacesPage from './pages/SpacesPage.vue'
@@ -19,12 +20,14 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', component: LoginPage },
-    { path: '/register', component: RegisterPage },
-    { path: '/', redirect: '/spaces' },
-    { path: '/spaces', component: SpacesPage },
-    { path: '/spaces/:id', component: DetailPage },
+    { path: '/', redirect: () => homeForRole(account.value?.role) },
+    ...(!adminOnly ? [
+      { path: '/register', component: RegisterPage },
+      { path: '/spaces', component: SpacesPage },
+      { path: '/spaces/:id', component: DetailPage },
+      { path: '/my/reviews', component: MyReviewsPage, meta: { role: 'USER' } },
+    ] : []),
     { path: '/data/spaces', component: DataSpacesPage, meta: { role: 'DATA_ADMIN' } },
-    { path: '/my/reviews', component: MyReviewsPage, meta: { role: 'USER' } },
     { path: '/data/reviews', component: DataReviewsPage, meta: { role: 'DATA_ADMIN' } },
     { path: '/data/inspection', component: DataInspectionPage, meta: { role: 'DATA_ADMIN' } },
     { path: '/data/hardware-devices', component: DataDevicesPage, meta: { role: 'DATA_ADMIN' } },
@@ -32,7 +35,7 @@ export const router = createRouter({
     { path: '/system/accounts', component: SystemAccountsPage, meta: { role: 'SERVER_ADMIN' } },
     { path: '/system/config', component: SystemConfigPage, meta: { role: 'SERVER_ADMIN' } },
     { path: '/system/logs', component: SystemLogsPage, meta: { role: 'SERVER_ADMIN' } },
-    { path: '/:pathMatch(.*)*', redirect: '/spaces' },
+    { path: '/:pathMatch(.*)*', redirect: () => homeForRole(account.value?.role) },
   ],
   scrollBehavior: (_to, _from, savedPosition) => savedPosition ?? { top: 0 },
 })
@@ -45,6 +48,6 @@ router.beforeEach(async to => {
       return '/login'
     }
   }
-  if (to.meta.role && account.value.role !== to.meta.role) return '/spaces'
+  if (to.meta.role && account.value.role !== to.meta.role) return homeForRole(account.value.role)
 })
 window.addEventListener('campusflow-session-expired', () => { if (router.currentRoute.value.path !== '/login') void router.replace('/login') })
